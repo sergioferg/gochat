@@ -13,6 +13,8 @@ CREATE TABLE messages(
         FOREIGN KEY (chat_id)
         REFERENCES chats(id) ON DELETE CASCADE
 );
+CREATE INDEX idx_messages_chat_id_id ON messages(chat_id, id DESC);
+CREATE INDEX idx_messages_sender_id ON messages(sender_id);
 
 -- +goose Down
 DROP TABLE IF EXISTS messages;

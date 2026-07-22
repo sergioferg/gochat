@@ -12,29 +12,37 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users(id,  email, hashed_password)
+INSERT INTO users(id, nickname,  email, hashed_password)
 VALUES (
     $1,
     $2,
-    $3
+    $3,
+    $4
 )
-RETURNING id, nickname, email, hashed_password, created_at, updated_at
+RETURNING id, nickname, email, hashed_password, is_verified, created_at, updated_at
 `
 
 type CreateUserParams struct {
 	ID             uuid.UUID
+	Nickname       string
 	Email          string
 	HashedPassword string
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, createUser, arg.ID, arg.Email, arg.HashedPassword)
+	row := q.db.QueryRow(ctx, createUser,
+		arg.ID,
+		arg.Nickname,
+		arg.Email,
+		arg.HashedPassword,
+	)
 	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Nickname,
 		&i.Email,
 		&i.HashedPassword,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -43,7 +51,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 
 const getUserByEmail = `-- name: GetUserByEmail :one
 
-SELECT id, nickname, email, hashed_password, created_at, updated_at FROM users
+SELECT id, nickname, email, hashed_password, is_verified, created_at, updated_at FROM users
 WHERE email = $1
 `
 
@@ -55,6 +63,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.Nickname,
 		&i.Email,
 		&i.HashedPassword,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -68,7 +77,7 @@ SET email = $1,
     hashed_password = $2,
     updated_at = NOW() AT TIME ZONE 'UTC'
 WHERE id = $3
-RETURNING id, nickname, email, hashed_password, created_at, updated_at
+RETURNING id, nickname, email, hashed_password, is_verified, created_at, updated_at
 `
 
 type UpdateUserParams struct {
@@ -85,6 +94,31 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.Nickname,
 		&i.Email,
 		&i.HashedPassword,
+		&i.IsVerified,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const verifyUser = `-- name: VerifyUser :one
+
+UPDATE users
+SET is_verified = TRUE,
+    updated_at = NOW() AT TIME ZONE 'UTC'
+WHERE id = $1
+RETURNING id, nickname, email, hashed_password, is_verified, created_at, updated_at
+`
+
+func (q *Queries) VerifyUser(ctx context.Context, id uuid.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, verifyUser, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Nickname,
+		&i.Email,
+		&i.HashedPassword,
+		&i.IsVerified,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

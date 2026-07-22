@@ -54,7 +54,9 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/healthz", handlers.HandlerEndpoint)
-	
+
+	mux.HandleFunc("POST /api/revoke", api.HandlerRevokeToken)
+	mux.HandleFunc("POST /api/login", api.HandlerLogin)
 	mux.HandleFunc("POST /api/users", api.HandlerUserCreate)
 
 	s := &http.Server{

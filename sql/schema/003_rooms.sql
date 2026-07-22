@@ -12,6 +12,7 @@ CREATE TABLE chat_rooms (
         FOREIGN KEY (user_id)
         REFERENCES users(id) ON DELETE CASCADE
 );
+CREATE INDEX idx_chat_rooms_user_id ON chat_rooms(user_id);
 
 -- +goose Down
 DROP TABLE IF EXISTS chat_rooms;

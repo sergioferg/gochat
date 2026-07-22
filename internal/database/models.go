@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Chat struct {
@@ -33,11 +34,21 @@ type Message struct {
 	UpdatedAt time.Time
 }
 
+type RefreshToken struct {
+	Token     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	UserID    uuid.UUID
+	ExpiresAt time.Time
+	RevokedAt pgtype.Timestamptz
+}
+
 type User struct {
 	ID             uuid.UUID
 	Nickname       string
 	Email          string
 	HashedPassword string
+	IsVerified     bool
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }

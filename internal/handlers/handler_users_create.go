@@ -13,12 +13,13 @@ import (
 )
 
 type User struct {
-	ID        uuid.UUID `json:"id"`
-	Nickname  string    `json:"nickname"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
-	Password  string    `json:"-"`
+	ID         uuid.UUID `json:"id"`
+	Nickname   string    `json:"nickname"`
+	IsVerified bool      `json:"is_verified"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	Email      string    `json:"email"`
+	Password   string    `json:"-"`
 }
 
 func (api *API) HandlerUserCreate(w http.ResponseWriter, r *http.Request) {
@@ -47,6 +48,7 @@ func (api *API) HandlerUserCreate(w http.ResponseWriter, r *http.Request) {
 	user, err := api.DB.CreateUser(r.Context(), database.CreateUserParams{
 		ID:             uuid.Must(uuid.NewV7()),
 		Email:          params.Email,
+		Nickname:       params.Nickname,
 		HashedPassword: hashedPassword,
 	})
 	if err != nil {
@@ -62,11 +64,12 @@ func (api *API) HandlerUserCreate(w http.ResponseWriter, r *http.Request) {
 
 	respond.WithJSON(w, http.StatusCreated, response{
 		User: User{
-			ID:        user.ID,
-			Nickname:  user.Nickname,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
-			Email:     user.Email,
+			ID:         user.ID,
+			Nickname:   user.Nickname,
+			IsVerified: user.IsVerified,
+			CreatedAt:  user.CreatedAt,
+			UpdatedAt:  user.UpdatedAt,
+			Email:      user.Email,
 		},
 	})
 }
