@@ -21,11 +21,12 @@ func (api *API) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 		RefreshToken string `json:"refresh_token"`
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
 	err := decoder.Decode(&params)
 	if err != nil {
-		respond.WithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
+		respond.WithError(w, http.StatusBadRequest, "Couldn't decode parameters", err)
 		return
 	}
 
@@ -49,6 +50,7 @@ func (api *API) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 		respond.WithError(w, http.StatusUnauthorized, "Incorrect email or password", nil)
 		return
 	}
+	// TODO: Move hardcoded JWT token duration (1 hour) to environment variables/configuration.
 	tokenDuration := time.Duration(1 * time.Hour)
 
 	accessToken, err := auth.MakeJWT(user.ID, api.Secret, tokenDuration)

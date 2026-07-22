@@ -52,6 +52,7 @@ func SendEmail(to, username, actionURL string) error {
 
 	m.AddAlternativeString(mail.TypeTextHTML, htmlContent)
 
+	// TODO: Move hardcoded SMTP host ("localhost") and port (1025) to environment variables/configuration.
 	client, err := mail.NewClient(
 		"localhost",
 		mail.WithPort(1025),

@@ -12,6 +12,7 @@ import (
 )
 
 const createVerificationToken = `-- name: CreateVerificationToken :one
+
 INSERT INTO email_verification_tokens (
     token_hash,
     user_id
@@ -51,6 +52,7 @@ func (q *Queries) DeleteVerificationTokensByUserID(ctx context.Context, userID u
 }
 
 const getUserFromVerificationToken = `-- name: GetUserFromVerificationToken :one
+
 SELECT u.id, u.nickname, u.email, u.hashed_password, u.is_verified, u.created_at, u.updated_at
 FROM email_verification_tokens evt
 JOIN users u ON evt.user_id = u.id

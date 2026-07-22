@@ -34,11 +34,12 @@ func (api *API) HandlerUserCreate(w http.ResponseWriter, r *http.Request) {
 		User
 	}
 
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
 	err := decoder.Decode(&params)
 	if err != nil {
-		respond.WithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
+		respond.WithError(w, http.StatusBadRequest, "Couldn't decode parameters", err)
 		return
 	}
 
@@ -65,7 +66,12 @@ func (api *API) HandlerUserCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rawToken, hashedToken, _ := auth.GenerateAndHashToken()
+	rawToken, hashedToken, err := auth.GenerateAndHashToken()
+	if err != nil {
+		logrus.Warn("Error generating and hashing token:", err)
+		respond.WithError(w, http.StatusInternalServerError, "Something went wrong", err)
+		return
+	}
 
 	_, err = api.DB.CreateVerificationToken(r.Context(), database.CreateVerificationTokenParams{
 		TokenHash: hashedToken,
@@ -77,7 +83,9 @@ func (api *API) HandlerUserCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: Replace unmanaged goroutine with a job queue or worker pool for reliable asynchronous email delivery and error retries.
 	go func(email, nick, token string) {
+		// TODO: Move hardcoded base URL (http://localhost:8080) to environment variables/configuration.
 		url := fmt.Sprintf("http://localhost:8080/verify-email?token=%s", token)
 		_ = mailer.SendEmail(email, nick, url)
 	}(user.Email, user.Nickname, rawToken)

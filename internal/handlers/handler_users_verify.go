@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
 	"net/http"
 
 	"github.com/sergioferg/gochat/internal/auth"
@@ -10,13 +11,25 @@ import (
 )
 
 func (api *API) HandlerUserVerify(w http.ResponseWriter, r *http.Request) {
-	rawTokenFromURL := r.PathValue("token")
-	if rawTokenFromURL == "" {
+	type parameters struct {
+		Token string `json:"token"`
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		respond.WithError(w, http.StatusBadRequest, "Couldn't decode parameters", err)
+		return
+	}
+
+	if params.Token == "" {
 		respond.WithError(w, http.StatusBadRequest, "Missing verification token", nil)
 		return
 	}
 
-	incomingHash := auth.HashToken(rawTokenFromURL)
+	incomingHash := auth.HashToken(params.Token)
 	user, err := api.DB.GetUserFromVerificationToken(r.Context(), incomingHash)
 	if err != nil {
 		if err == sql.ErrNoRows {
