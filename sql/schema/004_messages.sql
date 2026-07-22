@@ -7,10 +7,10 @@ CREATE TABLE messages(
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_user_id
-        FOREIGN KEY sender_id
+        FOREIGN KEY (sender_id)
         REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_chat_id
-        FOREIGN KEY chat_id
+        FOREIGN KEY (chat_id)
         REFERENCES chats(id) ON DELETE CASCADE
 );
 
