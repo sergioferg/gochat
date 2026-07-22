@@ -17,7 +17,7 @@ import (
 type TokenType string
 
 const (
-	TokenTypeAccess TokenType = "tubely-access"
+	TokenTypeAccess TokenType = "gochat-access"
 )
 
 var ErrNoAuthHeaderIncluded = errors.New("no auth header included in request")
