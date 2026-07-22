@@ -10,7 +10,7 @@ import (
 	"github.com/sergioferg/gochat/internal/respond"
 )
 
-func (api *API) HandlerLogin(w http.ResponseWriter, r *http.Request) {
+func (api *API) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Password string `json:"password"`
 		Email    string `json:"email"`
@@ -57,14 +57,14 @@ func (api *API) HandlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refreshToken, err := auth.MakeRefreshToken()
+	refreshToken, hashedRefreshToken, err := auth.GenerateAndHashToken()
 	if err != nil {
 		respond.WithError(w, http.StatusInternalServerError, "error generating refresh token", err)
 		return
 	}
 	_, err = api.DB.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
-		Token:  refreshToken,
-		UserID: user.ID,
+		TokenHash: hashedRefreshToken,
+		UserID:    user.ID,
 	})
 	if err != nil {
 		respond.WithError(w, http.StatusInternalServerError, "Error saving refresh token to database", err)

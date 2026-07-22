@@ -1,6 +1,6 @@
 -- name: CreateRefreshToken :one
 INSERT INTO refresh_tokens (
-    token,
+    token_hash,
     created_at,
     updated_at,
     user_id,
@@ -22,11 +22,11 @@ RETURNING *;
 SELECT u.*
 FROM refresh_tokens rt
 JOIN users u ON(rt.user_id = u.id)
-WHERE rt.token = $1 AND revoked_at IS NULL AND expires_at > (NOW() AT TIME ZONE 'UTC');
+WHERE rt.token_hash = $1 AND revoked_at IS NULL AND expires_at > (NOW() AT TIME ZONE 'UTC');
 --
 
 -- name: RevokeRefreshToken :exec
 UPDATE refresh_tokens
 SET expires_at = (NOW() AT TIME ZONE 'UTC')
-WHERE token = $1;
+WHERE token_hash = $1;
 --

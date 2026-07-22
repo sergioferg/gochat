@@ -1,10 +1,10 @@
 -- +goose Up
 CREATE TABLE refresh_tokens(
-    token TEXT PRIMARY KEY,
-    created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL,
+    token_hash TEXT PRIMARY KEY,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
     user_id UUID NOT NULL,
-    expires_at TIMESTAMPTZ NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC') + INTERVAL '60 days',
     revoked_at TIMESTAMPTZ,
     CONSTRAINT fk_user_id
         FOREIGN KEY (user_id)

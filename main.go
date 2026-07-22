@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 
@@ -56,8 +55,9 @@ func main() {
 	mux.HandleFunc("GET /api/healthz", handlers.HandlerEndpoint)
 
 	mux.HandleFunc("POST /api/revoke", api.HandlerRevokeToken)
-	mux.HandleFunc("POST /api/login", api.HandlerLogin)
+	mux.HandleFunc("POST /api/login", api.HandlerUserLogin)
 	mux.HandleFunc("POST /api/users", api.HandlerUserCreate)
+	mux.HandleFunc("POST /api/verify", api.HandlerUserVerify)
 
 	s := &http.Server{
 		Addr:    ":" + port,
@@ -65,5 +65,5 @@ func main() {
 	}
 
 	logrus.Info("Serving on port:", port)
-	log.Fatal(s.ListenAndServe())
+	logrus.Fatal(s.ListenAndServe())
 }

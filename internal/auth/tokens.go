@@ -80,11 +80,14 @@ func GetBearerToken(headers http.Header) (string, error) {
 	return splitAuth[1], nil
 }
 
-func MakeRefreshToken() (string, error) {
-	token := make([]byte, 32)
-	if _, err := rand.Read(token); err != nil {
-		return "", err
+func GenerateAndHashToken() (rawToken string, tokenHash string, err error) {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", "", err
 	}
 
-	return hex.EncodeToString(token), nil
+	rawToken = hex.EncodeToString(bytes)
+	tokenHash = HashToken(rawToken)
+
+	return rawToken, tokenHash, nil
 }

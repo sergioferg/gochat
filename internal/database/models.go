@@ -25,6 +25,13 @@ type ChatRoom struct {
 	LastReadAt time.Time
 }
 
+type EmailVerificationToken struct {
+	TokenHash string
+	UserID    uuid.UUID
+	CreatedAt time.Time
+	ExpiresAt time.Time
+}
+
 type Message struct {
 	ID        uuid.UUID
 	Content   string
@@ -35,7 +42,7 @@ type Message struct {
 }
 
 type RefreshToken struct {
-	Token     string
+	TokenHash string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	UserID    uuid.UUID

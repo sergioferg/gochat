@@ -1,6 +1,11 @@
 package auth
 
-import "github.com/alexedwards/argon2id"
+import (
+	"crypto/sha256"
+	"encoding/hex"
+
+	"github.com/alexedwards/argon2id"
+)
 
 func HashPassword(password string) (string, error) {
 	hash, err := argon2id.CreateHash(password, argon2id.DefaultParams)
@@ -16,4 +21,9 @@ func CheckPasswordHash(password, hash string) (bool, error) {
 		return false, err
 	}
 	return match, nil
+}
+
+func HashToken(rawToken string) string {
+	hash := sha256.Sum256([]byte(rawToken))
+	return hex.EncodeToString(hash[:])
 }
