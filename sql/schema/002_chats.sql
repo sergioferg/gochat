@@ -1,0 +1,10 @@
+-- +goose Up
+CREATE TABLE chats (
+    id UUID PRIMARY KEY,
+    name TEXT,
+    is_group BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- +goose Down
+DROP TABLE IF EXISTS chats;
