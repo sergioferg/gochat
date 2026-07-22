@@ -5,37 +5,39 @@
 package database
 
 import (
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type Chat struct {
-	ID        pgtype.UUID
-	Name      pgtype.Text
+	ID        uuid.UUID
+	Name      *string
 	IsGroup   bool
-	CreatedAt pgtype.Timestamptz
+	CreatedAt time.Time
 }
 
 type ChatRoom struct {
-	ChatID     pgtype.UUID
-	UserID     pgtype.UUID
-	JoinedAt   pgtype.Timestamptz
-	LastReadAt pgtype.Timestamptz
+	ChatID     uuid.UUID
+	UserID     uuid.UUID
+	JoinedAt   time.Time
+	LastReadAt time.Time
 }
 
 type Message struct {
-	ID        pgtype.UUID
+	ID        uuid.UUID
 	Content   string
-	SenderID  pgtype.UUID
-	ChatID    pgtype.UUID
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	SenderID  uuid.UUID
+	ChatID    uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type User struct {
-	ID             pgtype.UUID
+	ID             uuid.UUID
 	Nickname       string
 	Email          string
 	HashedPassword string
-	CreatedAt      pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }

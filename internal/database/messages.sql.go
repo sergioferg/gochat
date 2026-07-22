@@ -8,7 +8,7 @@ package database
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
 
 const createMessage = `-- name: CreateMessage :one
@@ -24,10 +24,10 @@ RETURNING id, content, sender_id, chat_id, created_at, updated_at
 `
 
 type CreateMessageParams struct {
-	ID       pgtype.UUID
+	ID       uuid.UUID
 	Content  string
-	SenderID pgtype.UUID
-	ChatID   pgtype.UUID
+	SenderID uuid.UUID
+	ChatID   uuid.UUID
 }
 
 func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error) {
@@ -58,8 +58,8 @@ LIMIT 50
 `
 
 type GetMessagesBeforeParams struct {
-	ChatID pgtype.UUID
-	ID     pgtype.UUID
+	ChatID uuid.UUID
+	ID     uuid.UUID
 }
 
 func (q *Queries) GetMessagesBefore(ctx context.Context, arg GetMessagesBeforeParams) ([]Message, error) {
@@ -100,7 +100,7 @@ RETURNING id, content, sender_id, chat_id, created_at, updated_at
 
 type UpdateMessageParams struct {
 	Content string
-	ID      pgtype.UUID
+	ID      uuid.UUID
 }
 
 func (q *Queries) UpdateMessage(ctx context.Context, arg UpdateMessageParams) (Message, error) {

@@ -9,14 +9,11 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/joho/godotenv"
+
 	"github.com/sergioferg/gochat/internal/database"
+	"github.com/sergioferg/gochat/internal/handlers"
 	"github.com/sirupsen/logrus"
 )
-
-type apiConfig struct {
-	db     *database.Queries
-	secret string
-}
 
 func init() {
 	logrus.SetFormatter(&logrus.TextFormatter{
@@ -48,15 +45,17 @@ func main() {
 	}
 	defer conn.Close(context.Background())
 
-	q := database.New(conn)
+	dbQueries := database.New(conn)
 
-	apiCfg := apiConfig{
-		db:     q,
-		secret: secret,
+	api := handlers.API{
+		DB:     dbQueries,
+		Secret: secret,
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/healthz", apiCfg.handlerEndpoint)
+	mux.HandleFunc("GET /api/healthz", handlers.HandlerEndpoint)
+	
+	mux.HandleFunc("POST /api/users", api.HandlerUserCreate)
 
 	s := &http.Server{
 		Addr:    ":" + port,
@@ -65,10 +64,4 @@ func main() {
 
 	logrus.Info("Serving on port:", port)
 	log.Fatal(s.ListenAndServe())
-}
-
-func (apiCfg *apiConfig) handlerEndpoint(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(http.StatusText(http.StatusOK)))
 }

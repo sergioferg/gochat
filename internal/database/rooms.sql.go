@@ -8,7 +8,7 @@ package database
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
 
 const addChatRoomMember = `-- name: AddChatRoomMember :exec
@@ -17,8 +17,8 @@ VALUES ($1, $2)
 `
 
 type AddChatRoomMemberParams struct {
-	ChatID pgtype.UUID
-	UserID pgtype.UUID
+	ChatID uuid.UUID
+	UserID uuid.UUID
 }
 
 func (q *Queries) AddChatRoomMember(ctx context.Context, arg AddChatRoomMemberParams) error {

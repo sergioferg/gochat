@@ -8,7 +8,7 @@ package database
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
 
 const createChat = `-- name: CreateChat :one
@@ -22,8 +22,8 @@ RETURNING id, name, is_group, created_at
 `
 
 type CreateChatParams struct {
-	ID      pgtype.UUID
-	Name    pgtype.Text
+	ID      uuid.UUID
+	Name    *string
 	IsGroup bool
 }
 
@@ -52,13 +52,13 @@ LIMIT 1
 `
 
 type GetDirectChatBetweenUsersParams struct {
-	UserID   pgtype.UUID
-	UserID_2 pgtype.UUID
+	UserID   uuid.UUID
+	UserID_2 uuid.UUID
 }
 
-func (q *Queries) GetDirectChatBetweenUsers(ctx context.Context, arg GetDirectChatBetweenUsersParams) (pgtype.UUID, error) {
+func (q *Queries) GetDirectChatBetweenUsers(ctx context.Context, arg GetDirectChatBetweenUsersParams) (uuid.UUID, error) {
 	row := q.db.QueryRow(ctx, getDirectChatBetweenUsers, arg.UserID, arg.UserID_2)
-	var id pgtype.UUID
+	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err
 }
