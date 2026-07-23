@@ -11,6 +11,24 @@ import (
 	"github.com/google/uuid"
 )
 
+const anonymizeUser = `-- name: AnonymizeUser :exec
+
+UPDATE users
+SET
+    email = CONCAT('deleted_', id, '@deleted.local'),
+    hashed_password = NULL,
+    nickname = 'Deleted User',
+    status = 'deleted',
+    deleted_at = CURRENT_TIMESTAMP,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND status != 'deleted'
+`
+
+func (q *Queries) AnonymizeUser(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, anonymizeUser, id)
+	return err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users(id, nickname,  email, hashed_password)
 VALUES (
@@ -19,14 +37,14 @@ VALUES (
     $3,
     $4
 )
-RETURNING id, nickname, email, hashed_password, is_verified, created_at, updated_at
+RETURNING id, nickname, email, hashed_password, status, created_at, updated_at, deleted_at
 `
 
 type CreateUserParams struct {
 	ID             uuid.UUID
 	Nickname       string
 	Email          string
-	HashedPassword string
+	HashedPassword *string
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -42,16 +60,17 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Nickname,
 		&i.Email,
 		&i.HashedPassword,
-		&i.IsVerified,
+		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
 
-SELECT id, nickname, email, hashed_password, is_verified, created_at, updated_at FROM users
+SELECT id, nickname, email, hashed_password, status, created_at, updated_at, deleted_at FROM users
 WHERE email = $1
 `
 
@@ -63,9 +82,10 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.Nickname,
 		&i.Email,
 		&i.HashedPassword,
-		&i.IsVerified,
+		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -76,13 +96,13 @@ UPDATE users
 SET email = $1,
     hashed_password = $2,
     updated_at = NOW() AT TIME ZONE 'UTC'
-WHERE id = $3
-RETURNING id, nickname, email, hashed_password, is_verified, created_at, updated_at
+WHERE id = $3 AND status = 'active'
+RETURNING id, nickname, email, hashed_password, status, created_at, updated_at, deleted_at
 `
 
 type UpdateUserParams struct {
 	Email          string
-	HashedPassword string
+	HashedPassword *string
 	ID             uuid.UUID
 }
 
@@ -94,9 +114,10 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.Nickname,
 		&i.Email,
 		&i.HashedPassword,
-		&i.IsVerified,
+		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -104,9 +125,9 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 const verifyUser = `-- name: VerifyUser :exec
 
 UPDATE users
-SET is_verified = TRUE,
+SET status = 'active',
     updated_at = NOW() AT TIME ZONE 'UTC'
-WHERE id = $1
+WHERE id = $1 AND status = 'unverified'
 `
 
 func (q *Queries) VerifyUser(ctx context.Context, id uuid.UUID) error {

@@ -50,9 +50,20 @@ func (q *Queries) CreateRefreshToken(ctx context.Context, arg CreateRefreshToken
 	return i, err
 }
 
+const deleteUserRefreshTokens = `-- name: DeleteUserRefreshTokens :exec
+
+DELETE FROM refresh_tokens
+WHERE user_id = $1
+`
+
+func (q *Queries) DeleteUserRefreshTokens(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteUserRefreshTokens, userID)
+	return err
+}
+
 const getUserFromRefreshToken = `-- name: GetUserFromRefreshToken :one
 
-SELECT u.id, u.nickname, u.email, u.hashed_password, u.is_verified, u.created_at, u.updated_at
+SELECT u.id, u.nickname, u.email, u.hashed_password, u.status, u.created_at, u.updated_at, u.deleted_at
 FROM refresh_tokens rt
 JOIN users u ON(rt.user_id = u.id)
 WHERE rt.token_hash = $1 AND revoked_at IS NULL AND expires_at > (NOW() AT TIME ZONE 'UTC')
@@ -66,9 +77,10 @@ func (q *Queries) GetUserFromRefreshToken(ctx context.Context, tokenHash string)
 		&i.Nickname,
 		&i.Email,
 		&i.HashedPassword,
-		&i.IsVerified,
+		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

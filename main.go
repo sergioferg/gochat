@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
+	"github.com/justinas/alice"
 	"github.com/sergioferg/gochat/internal/database"
 	"github.com/sergioferg/gochat/internal/handlers"
 	"github.com/sirupsen/logrus"
@@ -55,6 +56,7 @@ func main() {
 
 	api := handlers.API{
 		DB:           dbQueries,
+		Pool:         pool,
 		Secret:       secret,
 		ResendApiKey: resendKey,
 		BaseURL:      baseURL,
@@ -68,6 +70,10 @@ func main() {
 	mux.HandleFunc("POST /api/login", api.HandlerUserLogin)
 	mux.HandleFunc("POST /api/users", api.HandlerUserCreate)
 	mux.HandleFunc("POST /api/verify", api.HandlerUserVerify)
+
+	protectedChain := alice.New(api.AuthMiddleware)
+
+	mux.Handle("DELETE /api/users", protectedChain.ThenFunc(api.HandlerUserDelete))
 
 	s := &http.Server{
 		Addr:         ":" + port,

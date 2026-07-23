@@ -35,12 +35,12 @@ func (api *API) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 		respond.WithError(w, http.StatusUnauthorized, "Incorrect email or password", nil)
 		return
 	}
-	if !user.IsVerified {
+	if user.Status == "unverified" {
 		respond.WithError(w, http.StatusUnauthorized, "Account not verified", nil)
 		return
 	}
 
-	match, err := auth.CheckPasswordHash(params.Password, user.HashedPassword)
+	match, err := auth.CheckPasswordHash(params.Password, *user.HashedPassword)
 	if err != nil {
 		respond.WithError(w, http.StatusInternalServerError, "Error checking hash", err)
 		return
@@ -75,12 +75,12 @@ func (api *API) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 
 	respond.WithJSON(w, http.StatusOK, response{
 		User: User{
-			ID:         user.ID,
-			Nickname:   user.Nickname,
-			IsVerified: user.IsVerified,
-			CreatedAt:  user.CreatedAt,
-			UpdatedAt:  user.UpdatedAt,
-			Email:      user.Email,
+			ID:        user.ID,
+			Nickname:  user.Nickname,
+			Status:    user.Status,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+			Email:     user.Email,
 		},
 		Token:        accessToken,
 		RefreshToken: refreshToken,

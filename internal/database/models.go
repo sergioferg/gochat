@@ -41,6 +41,14 @@ type Message struct {
 	UpdatedAt time.Time
 }
 
+type OauthAccount struct {
+	ID             uuid.UUID
+	UserID         uuid.UUID
+	Provider       string
+	ProviderUserID string
+	CreatedAt      time.Time
+}
+
 type RefreshToken struct {
 	TokenHash string
 	CreatedAt time.Time
@@ -54,8 +62,9 @@ type User struct {
 	ID             uuid.UUID
 	Nickname       string
 	Email          string
-	HashedPassword string
-	IsVerified     bool
+	HashedPassword *string
+	Status         string
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
+	DeletedAt      pgtype.Timestamptz
 }

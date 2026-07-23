@@ -19,13 +19,25 @@ UPDATE users
 SET email = $1,
     hashed_password = $2,
     updated_at = NOW() AT TIME ZONE 'UTC'
-WHERE id = $3
+WHERE id = $3 AND status = 'active'
 RETURNING *;
 --
 
 -- name: VerifyUser :exec
 UPDATE users
-SET is_verified = TRUE,
+SET status = 'active',
     updated_at = NOW() AT TIME ZONE 'UTC'
-WHERE id = $1;
+WHERE id = $1 AND status = 'unverified';
+--
+
+-- name: AnonymizeUser :exec
+UPDATE users
+SET
+    email = CONCAT('deleted_', id, '@deleted.local'),
+    hashed_password = NULL,
+    nickname = 'Deleted User',
+    status = 'deleted',
+    deleted_at = CURRENT_TIMESTAMP,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND status != 'deleted';
 --

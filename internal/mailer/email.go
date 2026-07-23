@@ -21,7 +21,7 @@ func SendResendEmail(to, username, actionURL, apiKey string) error {
 			<div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 8px;">
 				Hello %s!
 				<br><br>
-				We received a request to verify an account with gochat ID: <strong>%s</strong><br>
+				We received a request to verify an account with GoChat ID: <strong>%s</strong><br>
 				To verify your account, click the link below:
 				<br><br>
 				<a href="%s" style="background:#00acd7;padding:10px 20px;color:#fff;font-size:.85rem;text-decoration:none;display:inline-block;border-radius:4px;margin:0 auto" rel="noopener noreferrer" target="_blank">
@@ -34,7 +34,7 @@ func SendResendEmail(to, username, actionURL, apiKey string) error {
 				If you have any questions or concerns, please contact us at <a href="%s" target="_blank">%s</a>.
 				<br><br>
 				Thank you,<br>
-				The Gochat Team
+				The GoChat Team
 			</div>
 		</body>
 	`, username, username, actionURL, gochatEmail, gochatEmail)

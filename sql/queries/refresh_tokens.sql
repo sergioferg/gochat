@@ -30,3 +30,8 @@ UPDATE refresh_tokens
 SET expires_at = (NOW() AT TIME ZONE 'UTC')
 WHERE token_hash = $1;
 --
+
+-- name: DeleteUserRefreshTokens :exec
+DELETE FROM refresh_tokens
+WHERE user_id = $1;
+--
