@@ -31,9 +31,9 @@ func main() {
 	if dbURL == "" {
 		logrus.Fatal("DB_URL must be set")
 	}
-	secret := os.Getenv("SECRET_TOKEN")
+	secret := os.Getenv("JWT_SECRET_TOKEN")
 	if secret == "" {
-		logrus.Fatal("SECRET_TOKEN must be set")
+		logrus.Fatal("JWT_SECRET_TOKEN must be set")
 	}
 	port := os.Getenv("PORT")
 	if port == "" {
