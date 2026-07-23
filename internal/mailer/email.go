@@ -7,9 +7,54 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/resend/resend-go/v3"
 	"github.com/sirupsen/logrus"
 	"github.com/wneessen/go-mail"
 )
+
+func SendResendEmail(to, username, actionURL, apiKey string) error {
+	client := resend.NewClient(apiKey)
+	gochatEmail := "noreply@notifications.trygochat.tech"
+
+	htmlContent := fmt.Sprintf(`
+		<body style="font-family: Arial, sans-serif; background-color: #f4f4f5; padding: 20px;">
+			<div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 8px;">
+				Hello %s!
+				<br><br>
+				We received a request to verify an account with gochat ID: <strong>%s</strong><br>
+				To verify your account, click the link below:
+				<br><br>
+				<a href="%s" style="background:#00acd7;padding:10px 20px;color:#fff;font-size:.85rem;text-decoration:none;display:inline-block;border-radius:4px;margin:0 auto" rel="noopener noreferrer" target="_blank">
+					Verify Account
+				</a>
+				<br><br>
+				If you did not make this request, your email address may have been
+				entered by mistake and you can safely disregard this email.
+				<br><br>
+				If you have any questions or concerns, please contact us at <a href="%s" target="_blank">%s</a>.
+				<br><br>
+				Thank you,<br>
+				The Gochat Team
+			</div>
+		</body>
+	`, username, username, actionURL, gochatEmail, gochatEmail)
+
+	params := &resend.SendEmailRequest{
+		From:    "GoChat Support <noreply@notifications.trygochat.tech>",
+		To:      []string{to},
+		Subject: "Verify Account",
+		Html:    htmlContent,
+	}
+
+	sent, err := client.Emails.Send(params)
+	if err != nil {
+		logrus.Error(fmt.Sprintf("failed to send email: %s", err))
+		return err
+	}
+
+	logrus.Info("email sent:", sent.Id)
+	return nil
+}
 
 func SendEmail(to, username, actionURL string) error {
 	m := mail.NewMsg()

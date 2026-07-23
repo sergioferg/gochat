@@ -39,6 +39,14 @@ func main() {
 	if port == "" {
 		logrus.Fatal("PORT must be set")
 	}
+	resendKey := os.Getenv("RESEND_API_KEY")
+	if resendKey == "" {
+		logrus.Fatal("RESEND_API_KEY must be set")
+	}
+	baseURL := os.Getenv("BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:8080"
+	}
 
 	pool := initDB(dbURL)
 	defer pool.Close()
@@ -46,8 +54,10 @@ func main() {
 	dbQueries := database.New(pool)
 
 	api := handlers.API{
-		DB:     dbQueries,
-		Secret: secret,
+		DB:           dbQueries,
+		Secret:       secret,
+		ResendApiKey: resendKey,
+		BaseURL:      baseURL,
 	}
 
 	mux := http.NewServeMux()

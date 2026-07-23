@@ -85,9 +85,8 @@ func (api *API) HandlerUserCreate(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: Replace unmanaged goroutine with a job queue or worker pool for reliable asynchronous email delivery and error retries.
 	go func(email, nick, token string) {
-		// TODO: Move hardcoded base URL (http://localhost:8080) to environment variables/configuration.
-		url := fmt.Sprintf("http://localhost:8080/verify-email?token=%s", token)
-		_ = mailer.SendEmail(email, nick, url)
+		url := fmt.Sprintf("%s/verify-email?token=%s", api.BaseURL, token)
+		_ = mailer.SendResendEmail(email, nick, url, api.ResendApiKey)
 	}(user.Email, user.Nickname, rawToken)
 
 	respond.WithJSON(w, http.StatusCreated, response{
