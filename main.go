@@ -4,9 +4,11 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
-	"github.com/jackc/pgx/v5"
-
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
 	"github.com/sergioferg/gochat/internal/database"
@@ -38,13 +40,10 @@ func main() {
 		logrus.Fatal("PORT must be set")
 	}
 
-	conn, err := pgx.Connect(context.Background(), dbURL)
-	if err != nil {
-		logrus.Fatal("Unable to connect to database: ", err)
-	}
-	defer conn.Close(context.Background())
+	pool := initDB(dbURL)
+	defer pool.Close()
 
-	dbQueries := database.New(conn)
+	dbQueries := database.New(pool)
 
 	api := handlers.API{
 		DB:     dbQueries,
@@ -54,16 +53,63 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/healthz", handlers.HandlerEndpoint)
 
+	mux.HandleFunc("POST /api/refresh", api.HandlerRefreshToken)
 	mux.HandleFunc("POST /api/revoke", api.HandlerRevokeToken)
 	mux.HandleFunc("POST /api/login", api.HandlerUserLogin)
 	mux.HandleFunc("POST /api/users", api.HandlerUserCreate)
 	mux.HandleFunc("POST /api/verify", api.HandlerUserVerify)
 
 	s := &http.Server{
-		Addr:    ":" + port,
-		Handler: mux,
+		Addr:         ":" + port,
+		Handler:      mux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
-	logrus.Info("Serving on port:", port)
-	logrus.Fatal(s.ListenAndServe())
+	go func() {
+		logrus.Info("Serving on port:", port)
+		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logrus.Fatal("Server failed:", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+	logrus.Info("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := s.Shutdown(ctx); err != nil {
+		logrus.Fatal("Server forced to shutdown:", err)
+	}
+
+	logrus.Info("Server exited properly")
+}
+
+func initDB(connString string) *pgxpool.Pool {
+	config, err := pgxpool.ParseConfig(connString)
+	if err != nil {
+		logrus.Fatal("Failed to parse config:", err)
+	}
+
+	config.MaxConns = 25
+	config.MinConns = 5
+	config.MaxConnLifetime = time.Hour
+	config.MaxConnIdleTime = 30 * time.Minute
+	config.HealthCheckPeriod = time.Minute
+	config.ConnConfig.ConnectTimeout = 5 * time.Second
+
+	pool, err := pgxpool.NewWithConfig(context.Background(), config)
+	if err != nil {
+		logrus.Fatal("Failed to create pool:", err)
+	}
+
+	if err := pool.Ping(context.Background()); err != nil {
+		logrus.Fatal("Failed to ping database:", err)
+	}
+
+	return pool
 }

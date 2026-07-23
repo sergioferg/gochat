@@ -3,6 +3,8 @@ package mailer
 import (
 	"context"
 	"fmt"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -52,10 +54,23 @@ func SendEmail(to, username, actionURL string) error {
 
 	m.AddAlternativeString(mail.TypeTextHTML, htmlContent)
 
-	// TODO: Move hardcoded SMTP host ("localhost") and port (1025) to environment variables/configuration.
+	smtpHost := os.Getenv("SMTP_HOST")
+	if smtpHost == "" {
+		smtpHost = "localhost"
+	}
+
+	smtpPort := 1025
+	if portStr := os.Getenv("SMTP_PORT"); portStr != "" {
+		if p, err := strconv.Atoi(portStr); err == nil {
+			smtpPort = p
+		} else {
+			logrus.Warnf("invalid SMTP_PORT %q, defaulting to 1025", portStr)
+		}
+	}
+
 	client, err := mail.NewClient(
-		"localhost",
-		mail.WithPort(1025),
+		smtpHost,
+		mail.WithPort(smtpPort),
 		mail.WithTLSPolicy(mail.NoTLS),
 	)
 	if err != nil {
