@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -58,7 +59,7 @@ func main() {
 	var githubOAuthConfig = &oauth2.Config{
 		ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
 		ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
-		RedirectURL:  "http://localhost:8080/api/oauth/github/callback",
+		RedirectURL:  fmt.Sprintf("%s/api/oauth/github/callback", baseURL),
 		Scopes:       []string{"read:user", "user:email"},
 		Endpoint:     github.Endpoint,
 	}
