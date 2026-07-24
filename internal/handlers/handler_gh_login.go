@@ -74,8 +74,35 @@ func (api *API) HandlerGitHubCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if githubUser.Email == "" {
-		respond.WithError(w, http.StatusBadRequest, "Your GitHub email is private. Please make it public or use a password to sign up.", nil)
-		return
+		emailsResp, err := client.Get("https://api.github.com/user/emails")
+		if err != nil {
+			respond.WithError(w, http.StatusInternalServerError, "Failed to get private emails", err)
+			return
+		}
+		defer emailsResp.Body.Close()
+
+		var emails []struct {
+			Email    string `json:"email"`
+			Primary  bool   `json:"primary"`
+			Verified bool   `json:"verified"`
+		}
+
+		if err := json.NewDecoder(emailsResp.Body).Decode(&emails); err != nil {
+			respond.WithError(w, http.StatusInternalServerError, "Failed to decode emails", err)
+			return
+		}
+
+		for _, e := range emails {
+			if e.Primary && e.Verified {
+				githubUser.Email = e.Email
+				break
+			}
+		}
+
+		if githubUser.Email == "" {
+			respond.WithError(w, http.StatusBadRequest, "No verified primary email found on GitHub", nil)
+			return
+		}
 	}
 
 	providerUserID := strconv.FormatInt(githubUser.ID, 10)

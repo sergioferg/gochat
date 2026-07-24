@@ -64,6 +64,8 @@ func main() {
 		Endpoint:     github.Endpoint,
 	}
 
+	
+
 	pool := initDB(dbURL)
 	defer pool.Close()
 
