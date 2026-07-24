@@ -13,6 +13,7 @@ import (
 	"github.com/sergioferg/gochat/internal/auth"
 	"github.com/sergioferg/gochat/internal/database"
 	"github.com/sergioferg/gochat/internal/respond"
+	"github.com/sirupsen/logrus"
 )
 
 func (api *API) HandlerGitHubLogin(w http.ResponseWriter, r *http.Request) {
@@ -95,6 +96,7 @@ func (api *API) HandlerGitHubCallback(w http.ResponseWriter, r *http.Request) {
 						Email:          githubUser.Email,
 						Nickname:       githubUser.Login,
 						HashedPassword: nil,
+						Status:         "active",
 					})
 					if err != nil {
 						respond.WithError(w, http.StatusInternalServerError, "Something went wrong", err)
@@ -125,6 +127,12 @@ func (api *API) HandlerGitHubCallback(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					respond.WithError(w, http.StatusInternalServerError, "Something went wrong", err)
 					return
+				}
+				if existingUser.Status == "unverified" {
+					err = api.DB.VerifyUser(r.Context(), existingUser.ID)
+					if err != nil {
+						logrus.Error("Failed to update user status to active during OAuth link:", err)
+					}
 				}
 
 				userID = existingUser.ID

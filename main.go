@@ -82,12 +82,19 @@ func main() {
 
 	mux.HandleFunc("POST /api/refresh", api.HandlerRefreshToken)
 	mux.HandleFunc("POST /api/revoke", api.HandlerRevokeToken)
-	mux.HandleFunc("POST /api/login", api.HandlerUserLogin)
+
+	// Standard auth
 	mux.HandleFunc("POST /api/users", api.HandlerUserCreate)
 	mux.HandleFunc("POST /api/verify", api.HandlerUserVerify)
+	mux.HandleFunc("POST /api/login", api.HandlerUserLogin)
+
+	// Github auth
+	mux.HandleFunc("GET /api/oauth/github/login", api.HandlerGitHubLogin)
+	mux.HandleFunc("GET /api/oauth/github/callback", api.HandlerGitHubCallback)
 
 	protectedChain := alice.New(api.AuthMiddleware)
 
+	// Delete and Update users
 	mux.Handle("DELETE /api/users", protectedChain.ThenFunc(api.HandlerUserDelete))
 	mux.Handle("PATCH /api/users", protectedChain.ThenFunc(api.HandlerUserUpdate))
 

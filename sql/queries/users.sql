@@ -1,10 +1,11 @@
 -- name: CreateUser :one
-INSERT INTO users(id, nickname,  email, hashed_password)
+INSERT INTO users(id, nickname,  email, hashed_password, status)
 VALUES (
     $1,
     $2,
     $3,
-    $4
+    $4,
+    COALESCE(sqlc.narg('status'), 'unverified')
 )
 RETURNING *;
 --

@@ -30,12 +30,13 @@ func (q *Queries) AnonymizeUser(ctx context.Context, id uuid.UUID) error {
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users(id, nickname,  email, hashed_password)
+INSERT INTO users(id, nickname,  email, hashed_password, status)
 VALUES (
     $1,
     $2,
     $3,
-    $4
+    $4,
+    COALESCE($5, 'unverified')
 )
 RETURNING id, nickname, email, hashed_password, status, created_at, updated_at, deleted_at
 `
@@ -45,6 +46,7 @@ type CreateUserParams struct {
 	Nickname       string
 	Email          string
 	HashedPassword *string
+	Status         interface{}
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -53,6 +55,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Nickname,
 		arg.Email,
 		arg.HashedPassword,
+		arg.Status,
 	)
 	var i User
 	err := row.Scan(
