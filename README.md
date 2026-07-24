@@ -16,6 +16,7 @@ This project is built using a modern backend tech stack focused on concurrency a
 
 ## ✨ Planned Features
 
+- **Secure Access:** Streamlined and secure user login flows via OAuth integrations.
 - **Real-Time Messaging:** Instant delivery of messages utilizing RabbitMQ for robust queueing.
 - **Persistent Storage:** Chat histories and user data safely managed in PostgreSQL.
 - **Cloud Deployment:** Fully containerized services orchestrated and deployed on Azure.

@@ -11,7 +11,9 @@ CREATE TABLE oauth_accounts(
         REFERENCES users(id)
         ON DELETE CASCADE,
 
-    UNIQUE(provider, provider_user_id)
+    UNIQUE(provider, provider_user_id),
+
+    UNIQUE(user_id, provider)
 );
 
 -- +goose Down

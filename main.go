@@ -10,6 +10,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/github"
 
 	"github.com/justinas/alice"
 	"github.com/sergioferg/gochat/internal/database"
@@ -53,17 +55,26 @@ func main() {
 		logrus.Fatal("PLATFORM must be set")
 	}
 
+	var githubOAuthConfig = &oauth2.Config{
+		ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
+		ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
+		RedirectURL:  "http://localhost:8080/api/oauth/github/callback",
+		Scopes:       []string{"read:user", "user:email"},
+		Endpoint:     github.Endpoint,
+	}
+
 	pool := initDB(dbURL)
 	defer pool.Close()
 
 	dbQueries := database.New(pool)
 
 	api := handlers.API{
-		DB:           dbQueries,
-		Pool:         pool,
-		Secret:       secret,
-		ResendApiKey: resendKey,
-		BaseURL:      baseURL,
+		DB:             dbQueries,
+		Pool:           pool,
+		Secret:         secret,
+		ResendApiKey:   resendKey,
+		BaseURL:        baseURL,
+		GithubOauthCfg: githubOAuthConfig,
 	}
 
 	mux := http.NewServeMux()

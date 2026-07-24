@@ -2,6 +2,7 @@ package auth
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -90,4 +91,22 @@ func GenerateAndHashToken() (rawToken string, tokenHash string, err error) {
 	tokenHash = HashToken(rawToken)
 
 	return rawToken, tokenHash, nil
+}
+
+func GenerateStateOauthCookie(w http.ResponseWriter) string {
+	b := make([]byte, 32)
+	rand.Read(b)
+	state := base64.URLEncoding.EncodeToString(b)
+
+	cookie := &http.Cookie{
+		Name:     "oauthstate",
+		Value:    state,
+		Expires:  time.Now().Add(10 * time.Minute),
+		HttpOnly: true,
+		Secure:   true,
+		Path:     "/",
+	}
+	http.SetCookie(w, cookie)
+
+	return state
 }
