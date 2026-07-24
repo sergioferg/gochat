@@ -1,9 +1,12 @@
 -- +goose Up
-CREATE TABLE refresh_tokens(
-    token_hash TEXT PRIMARY KEY,
+CREATE TABLE sessions(
+    id UUID PRIMARY KEY,
+    token_hash TEXT UNIQUE NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
     user_id UUID NOT NULL,
+    user_agent TEXT NOT NULL,
+    ip_address TEXT NOT NULL,
     expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC') + INTERVAL '60 days',
     revoked_at TIMESTAMPTZ,
     CONSTRAINT fk_user_id
@@ -15,4 +18,4 @@ CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
 CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
 
 -- +goose Down
-DROP TABLE refresh_tokens;
+DROP TABLE sessions;

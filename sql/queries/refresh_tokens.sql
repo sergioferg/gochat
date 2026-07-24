@@ -1,37 +1,66 @@
--- name: CreateRefreshToken :one
-INSERT INTO refresh_tokens (
+-- name: CreateSession :one
+INSERT INTO sessions (
+    id,
     token_hash,
     created_at,
     updated_at,
     user_id,
     expires_at,
+    user_agent,
+    ip_address,
     revoked_at
 )
 VALUES (
     $1,
-    NOW() AT TIME ZONE 'UTC',
-    NOW() AT TIME ZONE 'UTC',
     $2,
+    NOW() AT TIME ZONE 'UTC',
+    NOW() AT TIME ZONE 'UTC',
+    $3,
     (NOW() AT TIME ZONE 'UTC') + INTERVAL '60 days',
+    $4,
+    $5,
     NULL
 )
 RETURNING *;
 --
 
--- name: GetUserFromRefreshToken :one
+-- name: GetUserFromSession :one
 SELECT u.*
-FROM refresh_tokens rt
-JOIN users u ON(rt.user_id = u.id)
-WHERE rt.token_hash = $1 AND revoked_at IS NULL AND expires_at > (NOW() AT TIME ZONE 'UTC');
+FROM sessions s
+JOIN users u ON(s.user_id = u.id)
+WHERE s.token_hash = $1 AND revoked_at IS NULL AND expires_at > (NOW() AT TIME ZONE 'UTC');
 --
 
--- name: RevokeRefreshToken :exec
-UPDATE refresh_tokens
-SET expires_at = (NOW() AT TIME ZONE 'UTC')
-WHERE token_hash = $1;
+-- name: RevokeSession :exec
+UPDATE sessions
+SET revoked_at = (NOW() AT TIME ZONE 'UTC'),
+    updated_at = (NOW() AT TIME ZONE 'UTC')
+WHERE
+    id = $1
+    AND user_id = $2
+    AND revoked_at IS NULL;
 --
 
--- name: DeleteUserRefreshTokens :exec
-DELETE FROM refresh_tokens
+-- name: DeleteUserSessions :exec
+DELETE FROM sessions
 WHERE user_id = $1;
+--
+
+-- name: GetUserSessions :many
+SELECT id, created_at, user_agent, ip_address
+FROM sessions
+WHERE user_id = $1
+    AND expires_at > (NOW() AT TIME ZONE 'UTC')
+    AND revoked_at IS NULL
+ORDER BY created_at DESC;
+--
+
+-- name: RevokeSessionByToken :exec
+UPDATE sessions
+SET
+    revoked_at = (NOW() AT TIME ZONE 'UTC'),
+    updated_at = (NOW() AT TIME ZONE 'UTC')
+WHERE
+    token_hash = $1
+    AND revoked_at IS NULL;
 --

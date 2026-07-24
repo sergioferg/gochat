@@ -64,8 +64,6 @@ func main() {
 		Endpoint:     github.Endpoint,
 	}
 
-	
-
 	pool := initDB(dbURL)
 	defer pool.Close()
 
@@ -83,19 +81,26 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/healthz", handlers.HandlerEndpoint)
 
-	mux.HandleFunc("POST /api/refresh", api.HandlerRefreshToken)
-	mux.HandleFunc("POST /api/revoke", api.HandlerRevokeToken)
+	// Refresh JWT
+	mux.HandleFunc("POST /api/refresh", api.HandlerRefreshAccessToken)
 
-	// Standard auth
+	// User auth
+	mux.HandleFunc("POST /api/login", api.HandlerUserLogin)
 	mux.HandleFunc("POST /api/users", api.HandlerUserCreate)
 	mux.HandleFunc("POST /api/verify", api.HandlerUserVerify)
-	mux.HandleFunc("POST /api/login", api.HandlerUserLogin)
 
-	// Github auth
+	// Session termination
+	mux.HandleFunc("POST /api/logout", api.HandlerUserLogout)
+
+	// Github auth/session
 	mux.HandleFunc("GET /api/oauth/github/login", api.HandlerGitHubLogin)
 	mux.HandleFunc("GET /api/oauth/github/callback", api.HandlerGitHubCallback)
 
 	protectedChain := alice.New(api.AuthMiddleware)
+
+	// Active session management
+	mux.Handle("GET /api/sessions", protectedChain.ThenFunc(api.HandlerGetSessions))
+	mux.Handle("DELETE /api/sessions/{id}", protectedChain.ThenFunc(api.HandlerRevokeSession))
 
 	// Delete and Update users
 	mux.Handle("DELETE /api/users", protectedChain.ThenFunc(api.HandlerUserDelete))

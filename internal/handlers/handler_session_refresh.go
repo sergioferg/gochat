@@ -8,14 +8,20 @@ import (
 	"github.com/sergioferg/gochat/internal/respond"
 )
 
-func (api *API) HandlerRefreshToken(w http.ResponseWriter, r *http.Request) {
-	refreshToken, err := auth.GetBearerToken(r.Header)
-	if err != nil {
-		respond.WithError(w, http.StatusBadRequest, "Missing bearer token", err)
-		return
+func (api *API) HandlerRefreshAccessToken(w http.ResponseWriter, r *http.Request) {
+	type response struct {
+		Token string `json:"token"`
 	}
 
-	user, err := api.DB.GetUserFromRefreshToken(r.Context(), refreshToken)
+	cookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		respond.WithError(w, http.StatusUnauthorized, "Missing refresh token cookie", err)
+		return
+	}
+	rawToken := cookie.Value
+	hashedToken := auth.HashToken(rawToken)
+
+	user, err := api.DB.GetUserFromSession(r.Context(), hashedToken)
 	if err != nil {
 		respond.WithError(w, http.StatusUnauthorized, "Invalid/Expired token", err)
 		return
@@ -25,10 +31,6 @@ func (api *API) HandlerRefreshToken(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		respond.WithError(w, http.StatusInternalServerError, "Error generating JWT token", err)
 		return
-	}
-
-	type response struct {
-		Token string `json:"token"`
 	}
 
 	respond.WithJSON(w, http.StatusOK, response{

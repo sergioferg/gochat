@@ -13,7 +13,7 @@ func (api *API) HandlerUserDelete(w http.ResponseWriter, r *http.Request) {
 
 	userID, ok := r.Context().Value(UserIDContextKey).(uuid.UUID)
 	if !ok {
-		respond.WithError(w, http.StatusForbidden, "Not authorized to do this", nil)
+		respond.WithError(w, http.StatusForbidden, "Not authorized", nil)
 		return
 	}
 
@@ -26,7 +26,7 @@ func (api *API) HandlerUserDelete(w http.ResponseWriter, r *http.Request) {
 
 	qtx := api.DB.WithTx(tx)
 
-	if err := qtx.DeleteUserRefreshTokens(ctx, userID); err != nil {
+	if err := qtx.DeleteUserSessions(ctx, userID); err != nil {
 		respond.WithError(w, http.StatusInternalServerError, "Failed to delete tokens", err)
 		return
 	}

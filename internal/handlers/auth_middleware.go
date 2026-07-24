@@ -16,13 +16,13 @@ func (api *API) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		accessToken, err := auth.GetBearerToken(r.Header)
 		if err != nil {
-			respond.WithError(w, http.StatusUnauthorized, "Invalid/Missing token", err)
+			respond.WithError(w, http.StatusUnauthorized, "User not logged in", nil)
 			return
 		}
 
 		userID, err := auth.ValidateJWT(accessToken, api.Secret)
 		if err != nil {
-			respond.WithError(w, http.StatusUnauthorized, "Invalid token", err)
+			respond.WithError(w, http.StatusUnauthorized, "User not logged in", nil)
 			return
 		}
 

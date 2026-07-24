@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,7 +25,7 @@ func (api *API) HandlerGitHubLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *API) HandlerGitHubCallback(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("oauthstate")
+	oauthStateCookie, err := r.Cookie("oauthstate")
 	if err != nil {
 		respond.WithError(w, http.StatusBadRequest, "Missing state cookie", err)
 		return
@@ -32,15 +33,18 @@ func (api *API) HandlerGitHubCallback(w http.ResponseWriter, r *http.Request) {
 
 	urlState := r.FormValue("state")
 
-	if cookie.Value != urlState {
+	if oauthStateCookie.Value != urlState {
 		respond.WithError(w, http.StatusForbidden, "Invalid OAuth state", nil)
 		return
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:   "oauthstate",
-		Value:  "",
-		MaxAge: -1,
+		Name:     "oauthstate",
+		Value:    "",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   true,
+		Path:     "/",
 	})
 
 	code := r.FormValue("code")
@@ -186,9 +190,23 @@ func (api *API) HandlerGitHubCallback(w http.ResponseWriter, r *http.Request) {
 		respond.WithError(w, http.StatusInternalServerError, "error generating refresh token", err)
 		return
 	}
-	_, err = api.DB.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
+
+	userAgent := r.UserAgent()
+
+	ipAddress := r.Header.Get("X-Forwarded-For")
+	if ipAddress == "" {
+		ipAddress = r.RemoteAddr
+	}
+
+	if strings.Contains(ipAddress, ",") {
+		ipAddress = strings.Split(ipAddress, ",")[0]
+	}
+	_, err = api.DB.CreateSession(r.Context(), database.CreateSessionParams{
+		ID:        uuid.Must(uuid.NewV7()),
 		TokenHash: hashedRefreshToken,
 		UserID:    userID,
+		UserAgent: userAgent,
+		IpAddress: ipAddress,
 	})
 	if err != nil {
 		respond.WithError(w, http.StatusInternalServerError, "Error saving refresh token to database", err)
@@ -199,10 +217,10 @@ func (api *API) HandlerGitHubCallback(w http.ResponseWriter, r *http.Request) {
 		Name:     "refresh_token",
 		Value:    refreshToken,
 		Path:     "/",
-		HttpOnly: true, // Frontend JS cannot read this!
+		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
-		MaxAge:   60 * 60 * 24 * 7, // 7 days
+		MaxAge:   60 * 60 * 24 * 60, // 60 days (same as db duration)
 	})
 
 	frontendURL := fmt.Sprintf("%s/oauth-callback#access_token=%s", api.BaseURL, accessToken)

@@ -7,70 +7,89 @@ package database
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
 
-const createRefreshToken = `-- name: CreateRefreshToken :one
-INSERT INTO refresh_tokens (
+const createSession = `-- name: CreateSession :one
+INSERT INTO sessions (
+    id,
     token_hash,
     created_at,
     updated_at,
     user_id,
     expires_at,
+    user_agent,
+    ip_address,
     revoked_at
 )
 VALUES (
     $1,
-    NOW() AT TIME ZONE 'UTC',
-    NOW() AT TIME ZONE 'UTC',
     $2,
+    NOW() AT TIME ZONE 'UTC',
+    NOW() AT TIME ZONE 'UTC',
+    $3,
     (NOW() AT TIME ZONE 'UTC') + INTERVAL '60 days',
+    $4,
+    $5,
     NULL
 )
-RETURNING token_hash, created_at, updated_at, user_id, expires_at, revoked_at
+RETURNING id, token_hash, created_at, updated_at, user_id, user_agent, ip_address, expires_at, revoked_at
 `
 
-type CreateRefreshTokenParams struct {
+type CreateSessionParams struct {
+	ID        uuid.UUID
 	TokenHash string
 	UserID    uuid.UUID
+	UserAgent string
+	IpAddress string
 }
 
-func (q *Queries) CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error) {
-	row := q.db.QueryRow(ctx, createRefreshToken, arg.TokenHash, arg.UserID)
-	var i RefreshToken
+func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error) {
+	row := q.db.QueryRow(ctx, createSession,
+		arg.ID,
+		arg.TokenHash,
+		arg.UserID,
+		arg.UserAgent,
+		arg.IpAddress,
+	)
+	var i Session
 	err := row.Scan(
+		&i.ID,
 		&i.TokenHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.UserID,
+		&i.UserAgent,
+		&i.IpAddress,
 		&i.ExpiresAt,
 		&i.RevokedAt,
 	)
 	return i, err
 }
 
-const deleteUserRefreshTokens = `-- name: DeleteUserRefreshTokens :exec
+const deleteUserSessions = `-- name: DeleteUserSessions :exec
 
-DELETE FROM refresh_tokens
+DELETE FROM sessions
 WHERE user_id = $1
 `
 
-func (q *Queries) DeleteUserRefreshTokens(ctx context.Context, userID uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteUserRefreshTokens, userID)
+func (q *Queries) DeleteUserSessions(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteUserSessions, userID)
 	return err
 }
 
-const getUserFromRefreshToken = `-- name: GetUserFromRefreshToken :one
+const getUserFromSession = `-- name: GetUserFromSession :one
 
 SELECT u.id, u.nickname, u.email, u.hashed_password, u.status, u.created_at, u.updated_at, u.deleted_at
-FROM refresh_tokens rt
-JOIN users u ON(rt.user_id = u.id)
-WHERE rt.token_hash = $1 AND revoked_at IS NULL AND expires_at > (NOW() AT TIME ZONE 'UTC')
+FROM sessions s
+JOIN users u ON(s.user_id = u.id)
+WHERE s.token_hash = $1 AND revoked_at IS NULL AND expires_at > (NOW() AT TIME ZONE 'UTC')
 `
 
-func (q *Queries) GetUserFromRefreshToken(ctx context.Context, tokenHash string) (User, error) {
-	row := q.db.QueryRow(ctx, getUserFromRefreshToken, tokenHash)
+func (q *Queries) GetUserFromSession(ctx context.Context, tokenHash string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserFromSession, tokenHash)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -85,14 +104,81 @@ func (q *Queries) GetUserFromRefreshToken(ctx context.Context, tokenHash string)
 	return i, err
 }
 
-const revokeRefreshToken = `-- name: RevokeRefreshToken :exec
+const getUserSessions = `-- name: GetUserSessions :many
 
-UPDATE refresh_tokens
-SET expires_at = (NOW() AT TIME ZONE 'UTC')
-WHERE token_hash = $1
+SELECT id, created_at, user_agent, ip_address
+FROM sessions
+WHERE user_id = $1
+    AND expires_at > (NOW() AT TIME ZONE 'UTC')
+    AND revoked_at IS NULL
+ORDER BY created_at DESC
 `
 
-func (q *Queries) RevokeRefreshToken(ctx context.Context, tokenHash string) error {
-	_, err := q.db.Exec(ctx, revokeRefreshToken, tokenHash)
+type GetUserSessionsRow struct {
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UserAgent string
+	IpAddress string
+}
+
+func (q *Queries) GetUserSessions(ctx context.Context, userID uuid.UUID) ([]GetUserSessionsRow, error) {
+	rows, err := q.db.Query(ctx, getUserSessions, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUserSessionsRow
+	for rows.Next() {
+		var i GetUserSessionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UserAgent,
+			&i.IpAddress,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const revokeSession = `-- name: RevokeSession :exec
+
+UPDATE sessions
+SET revoked_at = (NOW() AT TIME ZONE 'UTC'),
+    updated_at = (NOW() AT TIME ZONE 'UTC')
+WHERE
+    id = $1
+    AND user_id = $2
+    AND revoked_at IS NULL
+`
+
+type RevokeSessionParams struct {
+	ID     uuid.UUID
+	UserID uuid.UUID
+}
+
+func (q *Queries) RevokeSession(ctx context.Context, arg RevokeSessionParams) error {
+	_, err := q.db.Exec(ctx, revokeSession, arg.ID, arg.UserID)
+	return err
+}
+
+const revokeSessionByToken = `-- name: RevokeSessionByToken :exec
+
+UPDATE sessions
+SET
+    revoked_at = (NOW() AT TIME ZONE 'UTC'),
+    updated_at = (NOW() AT TIME ZONE 'UTC')
+WHERE
+    token_hash = $1
+    AND revoked_at IS NULL
+`
+
+func (q *Queries) RevokeSessionByToken(ctx context.Context, tokenHash string) error {
+	_, err := q.db.Exec(ctx, revokeSessionByToken, tokenHash)
 	return err
 }

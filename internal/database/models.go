@@ -49,11 +49,14 @@ type OauthAccount struct {
 	CreatedAt      time.Time
 }
 
-type RefreshToken struct {
+type Session struct {
+	ID        uuid.UUID
 	TokenHash string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	UserID    uuid.UUID
+	UserAgent string
+	IpAddress string
 	ExpiresAt time.Time
 	RevokedAt pgtype.Timestamptz
 }

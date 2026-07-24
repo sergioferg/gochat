@@ -3,8 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/sergioferg/gochat/internal/auth"
 	"github.com/sergioferg/gochat/internal/database"
 	"github.com/sergioferg/gochat/internal/respond"
@@ -17,8 +19,7 @@ func (api *API) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	type response struct {
 		User
-		Token        string `json:"token"`
-		RefreshToken string `json:"refresh_token"`
+		Token string `json:"token"`
 	}
 
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
@@ -30,7 +31,9 @@ func (api *API) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := api.DB.GetUserByEmail(r.Context(), params.Email)
+	cleanEmail := strings.ToLower(strings.TrimSpace(params.Email))
+
+	user, err := api.DB.GetUserByEmail(r.Context(), cleanEmail)
 	if err != nil {
 		respond.WithError(w, http.StatusUnauthorized, "Incorrect email or password", nil)
 		return
@@ -68,14 +71,38 @@ func (api *API) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 		respond.WithError(w, http.StatusInternalServerError, "error generating refresh token", err)
 		return
 	}
-	_, err = api.DB.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
+
+	userAgent := r.UserAgent()
+
+	ipAddress := r.Header.Get("X-Forwarded-For")
+	if ipAddress == "" {
+		ipAddress = r.RemoteAddr
+	}
+
+	if strings.Contains(ipAddress, ",") {
+		ipAddress = strings.Split(ipAddress, ",")[0]
+	}
+	_, err = api.DB.CreateSession(r.Context(), database.CreateSessionParams{
+		ID:        uuid.Must(uuid.NewV7()),
 		TokenHash: hashedRefreshToken,
 		UserID:    user.ID,
+		UserAgent: userAgent,
+		IpAddress: ipAddress,
 	})
 	if err != nil {
 		respond.WithError(w, http.StatusInternalServerError, "Error saving refresh token to database", err)
 		return
 	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    refreshToken,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   60 * 60 * 24 * 60, // 60 days (same as db duration)
+	})
 
 	respond.WithJSON(w, http.StatusOK, response{
 		User: User{
@@ -86,7 +113,6 @@ func (api *API) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 			UpdatedAt: user.UpdatedAt,
 			Email:     user.Email,
 		},
-		Token:        accessToken,
-		RefreshToken: refreshToken,
+		Token: accessToken,
 	})
 }
