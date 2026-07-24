@@ -48,6 +48,10 @@ func main() {
 	if baseURL == "" {
 		baseURL = "http://localhost:8080"
 	}
+	platform := os.Getenv("PLATFORM")
+	if platform == "" {
+		logrus.Fatal("PLATFORM must be set")
+	}
 
 	pool := initDB(dbURL)
 	defer pool.Close()
@@ -74,10 +78,13 @@ func main() {
 	protectedChain := alice.New(api.AuthMiddleware)
 
 	mux.Handle("DELETE /api/users", protectedChain.ThenFunc(api.HandlerUserDelete))
+	mux.Handle("PATCH /api/users", protectedChain.ThenFunc(api.HandlerUserUpdate))
+
+	globalChain := alice.New(api.SecurityHeadersMiddleware)
 
 	s := &http.Server{
 		Addr:         ":" + port,
-		Handler:      mux,
+		Handler:      globalChain.Then(mux),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  120 * time.Second,

@@ -11,4 +11,5 @@ type API struct {
 	Secret       string
 	ResendApiKey string
 	BaseURL      string
+	Platform     string
 }

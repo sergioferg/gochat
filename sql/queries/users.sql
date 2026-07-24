@@ -16,10 +16,12 @@ WHERE email = $1;
 
 -- name: UpdateUser :one
 UPDATE users
-SET email = $1,
-    hashed_password = $2,
+SET
+    email = COALESCE(sqlc.narg('email'), email),
+    nickname = COALESCE(sqlc.narg('nickname'), nickname),
+    hashed_password = COALESCE(sqlc.narg('hashed_password'), hashed_password),
     updated_at = NOW() AT TIME ZONE 'UTC'
-WHERE id = $3 AND status = 'active'
+WHERE id = sqlc.arg('id') AND status = 'active'
 RETURNING *;
 --
 
