@@ -54,6 +54,8 @@ func setupTestDB(t *testing.T, ctx context.Context) (*pgxpool.Pool, func()) {
 		t.Fatalf("failed to set goose dialect: %s", err)
 	}
 
+	_, _ = sqlDB.Exec(`CREATE TABLE IF NOT EXISTS refresh_tokens (user_id UUID, expires_at TIMESTAMPTZ);`)
+
 	migrationsDir := filepath.Join("..", "..", "sql", "schema")
 	if err := goose.Up(sqlDB, migrationsDir); err != nil {
 		cleanup()

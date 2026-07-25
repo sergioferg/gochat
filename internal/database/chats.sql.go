@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -41,13 +42,13 @@ func (q *Queries) CreateChat(ctx context.Context, arg CreateChatParams) (Chat, e
 
 const getDirectChatBetweenUsers = `-- name: GetDirectChatBetweenUsers :one
 
-SELECT cr.id
-FROM chats cr
-JOIN chat_rooms cr1 ON cr.id = cr1.chat_id
-JOIN chat_rooms cr2 ON cr.id = cr2.chat_id
-WHERE cr.is_group = FALSE
-  AND cr1.user_id = $1
-  AND cr2.user_id = $2
+SELECT c.id
+FROM chats c
+JOIN chat_participants cp1 ON c.id = cp1.chat_id
+JOIN chat_participants cp2 ON c.id = cp2.chat_id
+WHERE c.is_group = FALSE
+  AND cp1.user_id = $1
+  AND cp2.user_id = $2
 LIMIT 1
 `
 
@@ -61,4 +62,55 @@ func (q *Queries) GetDirectChatBetweenUsers(ctx context.Context, arg GetDirectCh
 	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const getUserChats = `-- name: GetUserChats :many
+
+SELECT
+    c.id AS chat_id,
+    c.name AS chat_name,
+    c.is_group,
+    cp.last_read_at,
+    (SELECT content FROM messages m WHERE m.chat_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_message_content,
+    (SELECT id FROM messages m WHERE m.chat_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_message_id
+FROM chats c
+JOIN chat_participants cp ON c.id = cp.chat_id
+WHERE cp.user_id = $1
+ORDER BY last_message_id DESC NULLS LAST
+`
+
+type GetUserChatsRow struct {
+	ChatID             uuid.UUID
+	ChatName           *string
+	IsGroup            bool
+	LastReadAt         time.Time
+	LastMessageContent string
+	LastMessageID      uuid.UUID
+}
+
+func (q *Queries) GetUserChats(ctx context.Context, userID uuid.UUID) ([]GetUserChatsRow, error) {
+	rows, err := q.db.Query(ctx, getUserChats, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUserChatsRow
+	for rows.Next() {
+		var i GetUserChatsRow
+		if err := rows.Scan(
+			&i.ChatID,
+			&i.ChatName,
+			&i.IsGroup,
+			&i.LastReadAt,
+			&i.LastMessageContent,
+			&i.LastMessageID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

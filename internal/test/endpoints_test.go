@@ -32,8 +32,8 @@ func setupTestServer(t *testing.T, dbQueries *database.Queries, pool *pgxpool.Po
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/healthz", handlers.HandlerEndpoint)
-	mux.HandleFunc("POST /api/refresh", api.HandlerRefreshToken)
-	mux.HandleFunc("POST /api/revoke", api.HandlerRevokeToken)
+	mux.HandleFunc("POST /api/refresh", api.HandlerRefreshAccessToken)
+	mux.HandleFunc("POST /api/logout", api.HandlerUserLogout)
 	mux.HandleFunc("POST /api/login", api.HandlerUserLogin)
 	mux.HandleFunc("POST /api/users", api.HandlerUserCreate)
 	mux.HandleFunc("POST /api/verify", api.HandlerUserVerify)
@@ -322,26 +322,26 @@ func TestRefreshAndRevokeToken(t *testing.T) {
 	require.Equal(t, http.StatusOK, vResp.StatusCode)
 	vResp.Body.Close()
 
-	// Create valid refresh token in DB (inserting both raw and hashed token so lookup succeeds regardless of internal handler hashing logic)
+	// Create valid refresh token in DB
 	rawRefreshToken, refreshHash, err := auth.GenerateAndHashToken()
 	require.NoError(t, err)
 
-	_, err = dbQueries.CreateRefreshToken(ctx, database.CreateRefreshTokenParams{
+	_, err = dbQueries.CreateSession(ctx, database.CreateSessionParams{
+		ID:        uuid.Must(uuid.NewV7()),
 		TokenHash: refreshHash,
 		UserID:    userID,
-	})
-	require.NoError(t, err)
-
-	_, err = dbQueries.CreateRefreshToken(ctx, database.CreateRefreshTokenParams{
-		TokenHash: rawRefreshToken,
-		UserID:    userID,
+		UserAgent: "test",
+		IpAddress: "127.0.0.1",
 	})
 	require.NoError(t, err)
 
 	t.Run("refresh token success", func(t *testing.T) {
 		req, err := http.NewRequest("POST", server.URL+"/api/refresh", nil)
 		require.NoError(t, err)
-		req.Header.Set("Authorization", "Bearer "+rawRefreshToken)
+		req.AddCookie(&http.Cookie{
+			Name:  "refresh_token",
+			Value: rawRefreshToken,
+		})
 
 		rResp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
@@ -364,14 +364,17 @@ func TestRefreshAndRevokeToken(t *testing.T) {
 		require.NoError(t, err)
 		defer rResp.Body.Close()
 
-		assert.Equal(t, http.StatusBadRequest, rResp.StatusCode)
+		assert.Equal(t, http.StatusUnauthorized, rResp.StatusCode)
 	})
 
 	t.Run("revoke token success then refresh fails", func(t *testing.T) {
-		// Revoke
-		req, err := http.NewRequest("POST", server.URL+"/api/revoke", nil)
+		// Revoke / Logout
+		req, err := http.NewRequest("POST", server.URL+"/api/logout", nil)
 		require.NoError(t, err)
-		req.Header.Set("Authorization", "Bearer "+rawRefreshToken)
+		req.AddCookie(&http.Cookie{
+			Name:  "refresh_token",
+			Value: rawRefreshToken,
+		})
 
 		revokeResp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
@@ -382,7 +385,10 @@ func TestRefreshAndRevokeToken(t *testing.T) {
 		// Try refresh after revoke
 		reqRefresh, err := http.NewRequest("POST", server.URL+"/api/refresh", nil)
 		require.NoError(t, err)
-		reqRefresh.Header.Set("Authorization", "Bearer "+rawRefreshToken)
+		reqRefresh.AddCookie(&http.Cookie{
+			Name:  "refresh_token",
+			Value: rawRefreshToken,
+		})
 
 		rResp, err := http.DefaultClient.Do(reqRefresh)
 		require.NoError(t, err)

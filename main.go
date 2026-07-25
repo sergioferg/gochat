@@ -17,6 +17,9 @@ import (
 	"github.com/justinas/alice"
 	"github.com/sergioferg/gochat/internal/database"
 	"github.com/sergioferg/gochat/internal/handlers"
+	"github.com/sergioferg/gochat/internal/pubsub"
+	"github.com/sergioferg/gochat/internal/routing"
+	"github.com/sergioferg/gochat/internal/ws"
 	"github.com/sirupsen/logrus"
 )
 
@@ -55,6 +58,10 @@ func main() {
 	if platform == "" {
 		logrus.Fatal("PLATFORM must be set")
 	}
+	rmqURL := os.Getenv("RABBITMQ_URL")
+	if rmqURL == "" {
+		logrus.Fatal("RABBITMQ_URL must be set")
+	}
 
 	var githubOAuthConfig = &oauth2.Config{
 		ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
@@ -68,15 +75,41 @@ func main() {
 	defer pool.Close()
 
 	dbQueries := database.New(pool)
+	wsManager := ws.NewManager()
+
+	rabbitClient, err := pubsub.New(rmqURL)
+	if err != nil {
+		logrus.Fatal("Failed to connect to RabbitMQ:", err)
+	}
+	defer rabbitClient.Close()
 
 	api := handlers.API{
 		DB:             dbQueries,
 		Pool:           pool,
+		WSManager:      wsManager,
+		RMQ:            rabbitClient,
+		GithubOauthCfg: githubOAuthConfig,
 		Secret:         secret,
 		ResendApiKey:   resendKey,
 		BaseURL:        baseURL,
-		GithubOauthCfg: githubOAuthConfig,
 	}
+
+	// Start listening in the background
+	err = pubsub.SubscribeJSON(
+		rabbitClient.Conn,
+		routing.ChatPrefix,
+		"", // Random temporary queue
+		"", // Empty routing key
+		pubsub.Transient,
+		func(event routing.ChatEvent) pubsub.AckType {
+			if event.Type == "new_message" {
+				for _, userID := range event.TargetUserIDs {
+					api.WSManager.SendToUser(userID, event)
+				}
+			}
+			return pubsub.Ack
+		},
+	)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/healthz", handlers.HandlerEndpoint)
@@ -105,6 +138,10 @@ func main() {
 	// Delete and Update users
 	mux.Handle("DELETE /api/users", protectedChain.ThenFunc(api.HandlerUserDelete))
 	mux.Handle("PATCH /api/users", protectedChain.ThenFunc(api.HandlerUserUpdate))
+
+	// Real-time connections
+	mux.Handle("GET /api/ws", protectedChain.ThenFunc(api.HandlerWebSocket))
+	mux.Handle("POST /api/messages", protectedChain.ThenFunc(api.HandlerSendMessage))
 
 	globalChain := alice.New(api.SecurityHeadersMiddleware)
 

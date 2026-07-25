@@ -18,7 +18,7 @@ type Chat struct {
 	CreatedAt time.Time
 }
 
-type ChatRoom struct {
+type ChatParticipant struct {
 	ChatID     uuid.UUID
 	UserID     uuid.UUID
 	JoinedAt   time.Time

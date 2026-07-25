@@ -24,3 +24,10 @@ VALUES(
 )
 RETURNING *;
 --
+
+-- name: GetRecentMessages :many
+SELECT * FROM messages
+WHERE chat_id = $1
+ORDER BY id DESC
+LIMIT 50;
+--
