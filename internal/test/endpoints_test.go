@@ -39,7 +39,15 @@ func setupTestServer(t *testing.T, dbQueries *database.Queries, pool *pgxpool.Po
 	mux.HandleFunc("POST /api/verify", api.HandlerUserVerify)
 
 	protectedChain := alice.New(api.AuthMiddleware)
+	mux.Handle("GET /api/chats", protectedChain.ThenFunc(api.HandlerGetUserChats))
+	mux.Handle("POST /api/chats", protectedChain.ThenFunc(api.HandlerCreateChat))
+	mux.Handle("GET /api/chats/{id}/messages", protectedChain.ThenFunc(api.HandlerGetMessages))
+	mux.Handle("GET /api/sessions", protectedChain.ThenFunc(api.HandlerGetSessions))
+	mux.Handle("DELETE /api/sessions/{id}", protectedChain.ThenFunc(api.HandlerRevokeSession))
 	mux.Handle("DELETE /api/users", protectedChain.ThenFunc(api.HandlerUserDelete))
+	mux.Handle("PATCH /api/users", protectedChain.ThenFunc(api.HandlerUserUpdate))
+	mux.Handle("POST /api/messages", protectedChain.ThenFunc(api.HandlerSendMessage))
+	mux.Handle("PATCH /api/messages/{id}", protectedChain.ThenFunc(api.HandlerUpdateMessage))
 
 	return httptest.NewServer(mux)
 }

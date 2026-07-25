@@ -25,6 +25,12 @@ VALUES(
 RETURNING *;
 --
 
+-- name: GetMessageMetadata :one
+SELECT sender_id, chat_id
+FROM messages
+WHERE id = $1;
+--
+
 -- name: GetRecentMessages :many
 SELECT * FROM messages
 WHERE chat_id = $1

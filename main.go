@@ -131,6 +131,11 @@ func main() {
 
 	protectedChain := alice.New(api.AuthMiddleware)
 
+	// Chat management
+	mux.Handle("GET /api/chats",protectedChain.ThenFunc(api.HandlerGetUserChats))
+	mux.Handle("POST /api/chats",protectedChain.ThenFunc(api.HandlerCreateChat))
+	mux.Handle("GET /api/chats/{id}/messages",protectedChain.ThenFunc(api.HandlerGetMessages))
+	
 	// Active session management
 	mux.Handle("GET /api/sessions", protectedChain.ThenFunc(api.HandlerGetSessions))
 	mux.Handle("DELETE /api/sessions/{id}", protectedChain.ThenFunc(api.HandlerRevokeSession))
@@ -139,9 +144,10 @@ func main() {
 	mux.Handle("DELETE /api/users", protectedChain.ThenFunc(api.HandlerUserDelete))
 	mux.Handle("PATCH /api/users", protectedChain.ThenFunc(api.HandlerUserUpdate))
 
-	// Real-time connections
+	// Real-time connections / Messages
 	mux.Handle("GET /api/ws", protectedChain.ThenFunc(api.HandlerWebSocket))
 	mux.Handle("POST /api/messages", protectedChain.ThenFunc(api.HandlerSendMessage))
+	mux.Handle("PATCH /api/messages/{id}",protectedChain.ThenFunc(api.HandlerUpdateMessage))
 
 	globalChain := alice.New(api.SecurityHeadersMiddleware)
 

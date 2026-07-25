@@ -49,6 +49,25 @@ func (q *Queries) CreateMessage(ctx context.Context, arg CreateMessageParams) (M
 	return i, err
 }
 
+const getMessageMetadata = `-- name: GetMessageMetadata :one
+
+SELECT sender_id, chat_id
+FROM messages
+WHERE id = $1
+`
+
+type GetMessageMetadataRow struct {
+	SenderID uuid.UUID
+	ChatID   uuid.UUID
+}
+
+func (q *Queries) GetMessageMetadata(ctx context.Context, id uuid.UUID) (GetMessageMetadataRow, error) {
+	row := q.db.QueryRow(ctx, getMessageMetadata, id)
+	var i GetMessageMetadataRow
+	err := row.Scan(&i.SenderID, &i.ChatID)
+	return i, err
+}
+
 const getMessagesBefore = `-- name: GetMessagesBefore :many
 SELECT id, content, sender_id, chat_id, created_at, updated_at FROM messages
 WHERE chat_id = $1
