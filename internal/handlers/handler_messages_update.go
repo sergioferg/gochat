@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/sergioferg/gochat/internal/database"
@@ -35,6 +36,11 @@ func (api *API) HandlerUpdateMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if strings.TrimSpace(params.Content) == "" {
+		respond.WithError(w, http.StatusBadRequest, "Message content cannot be empty", nil)
+		return
+	}
+
 	messageIDStr := r.PathValue("id")
 	messageID, err := uuid.Parse(messageIDStr)
 	if err != nil {
@@ -63,22 +69,23 @@ func (api *API) HandlerUpdateMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	targetIDs, err := api.DB.GetChatParticipantIDs(r.Context(), msgMeta.ChatID)
-	if err == nil {
-		event := routing.ChatEvent{
-			Type:          "message_edited",
-			ChatID:        msgMeta.ChatID,
-			SenderID:      userID,
-			Content:       dbMsg.Content,
-			TargetUserIDs: targetIDs,
-		}
-
-		err = pubsub.PublishJSON(api.RMQ.Channel, routing.ChatPrefix, "", event)
-		if err != nil {
-			logrus.Errorf("Failed to publish edit event to RabbitMQ: %v", err)
-		}
-	} else {
-		logrus.Errorf("Failed to fetch participants for edit event: %v", err)
-	}
+    if err == nil {
+        event := routing.ChatEvent{
+            Type:          "message_edited",
+            ChatID:        msgMeta.ChatID,
+            MessageID:     dbMsg.ID,
+            SenderID:      userID,
+            Content:       dbMsg.Content,
+            TargetUserIDs: targetIDs,
+        }
+	
+        err = pubsub.PublishJSON(api.RMQ.Channel, routing.ChatPrefix, "", event)
+        if err != nil {
+            logrus.Errorf("Failed to publish edit event to RabbitMQ: %v", err)
+        }
+    } else {
+        logrus.Errorf("Failed to fetch participants for edit event: %v", err)
+    }
 
 	respond.WithJSON(w, http.StatusOK, response{
 		Message: Message{

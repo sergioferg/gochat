@@ -15,6 +15,20 @@ SELECT * FROM users
 WHERE email = $1;
 --
 
+-- name: GetUserByID :many
+SELECT
+    u.id,
+    u.email,
+    u.nickname,
+    u.created_at,
+    u.updated_at,
+    oa.provider,
+    oa.provider_user_id
+FROM users u
+JOIN oauth_accounts oa ON(oa.user_id = u.id)
+WHERE u.id = $1;
+--
+
 -- name: UpdateUser :one
 UPDATE users
 SET

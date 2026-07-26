@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -91,6 +92,59 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const getUserByID = `-- name: GetUserByID :many
+
+SELECT
+    u.id,
+    u.email,
+    u.nickname,
+    u.created_at,
+    u.updated_at,
+    oa.provider,
+    oa.provider_user_id
+FROM users u
+JOIN oauth_accounts oa ON(oa.user_id = u.id)
+WHERE u.id = $1
+`
+
+type GetUserByIDRow struct {
+	ID             uuid.UUID
+	Email          string
+	Nickname       string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	Provider       string
+	ProviderUserID string
+}
+
+func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) ([]GetUserByIDRow, error) {
+	rows, err := q.db.Query(ctx, getUserByID, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUserByIDRow
+	for rows.Next() {
+		var i GetUserByIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.Nickname,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Provider,
+			&i.ProviderUserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateUser = `-- name: UpdateUser :one
