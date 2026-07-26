@@ -25,10 +25,10 @@ SELECT
     c.name AS chat_name,
     c.is_group,
     cp.last_read_at,
-    (SELECT content FROM messages m WHERE m.chat_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_message_content,
-    (SELECT id FROM messages m WHERE m.chat_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_message_id
+    COALESCE((SELECT content FROM messages m WHERE m.chat_id = c.id ORDER BY m.id DESC LIMIT 1), '') AS last_message_content,
+    COALESCE((SELECT id FROM messages m WHERE m.chat_id = c.id ORDER BY m.id DESC LIMIT 1), '00000000-0000-0000-0000-000000000000'::uuid) AS last_message_id
 FROM chats c
 JOIN chat_participants cp ON c.id = cp.chat_id
 WHERE cp.user_id = $1
-ORDER BY last_message_id DESC NULLS LAST;
+ORDER BY last_message_id DESC;
 --
