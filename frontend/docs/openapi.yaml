@@ -11,7 +11,7 @@ servers:
 security: []
 
 paths:
-  /api/healthz:
+  /healthz:
     get:
       summary: Health Check
       description: Returns the operational health status of the API server.
@@ -24,7 +24,7 @@ paths:
                 type: string
                 example: OK
 
-  /api/users:
+  /users:
     post:
       summary: Create User Account
       description: Registers a new user with nickname, email, and password. Sends a verification email.
@@ -140,7 +140,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/me:
+  /me:
     get:
       summary: Get Authenticated User Profile
       description: Retrieves detailed profile information for the authenticated user, including linked OAuth accounts.
@@ -172,7 +172,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/login:
+  /login:
     post:
       summary: User Login
       description: Authenticates user credentials. Returns JWT access token and sets an HttpOnly refresh token cookie.
@@ -220,7 +220,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/refresh:
+  /refresh:
     post:
       summary: Refresh Access Token
       description: Issues a new JWT access token using the HttpOnly `refresh_token` cookie.
@@ -253,7 +253,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/logout:
+  /logout:
     post:
       summary: User Logout
       description: Revokes the user session associated with the `refresh_token` cookie and clears the cookie.
@@ -274,7 +274,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/verify:
+  /verify:
     post:
       summary: Verify User Email
       description: Verifies account ownership using token sent via email.
@@ -310,7 +310,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/oauth/github/login:
+  /oauth/github/login:
     get:
       summary: Initiate GitHub OAuth Login
       description: Sets `oauthstate` cookie and redirects user to GitHub's OAuth authorization page.
@@ -318,7 +318,7 @@ paths:
         '307':
           description: Temporary redirect to GitHub OAuth page
 
-  /api/oauth/github/callback:
+  /oauth/github/callback:
     get:
       summary: GitHub OAuth Callback
       description: Handles redirect back from GitHub, exchanges code for access token, authenticates/creates user, and redirects to frontend with token fragment.
@@ -357,7 +357,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/chats:
+  /chats:
     get:
       summary: Get User Chats
       description: Retrieves all chats (inbox) for the authenticated user, including last message preview.
@@ -445,7 +445,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/chats/{id}/messages:
+  /chats/{id}/messages:
     get:
       summary: Get Chat Messages
       description: Fetches recent messages for a chat with optional pagination using `before_id`.
@@ -498,7 +498,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/messages:
+  /messages:
     post:
       summary: Send Message
       description: Sends a new message to a chat and broadcasts it via RabbitMQ pub/sub.
@@ -542,7 +542,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/messages/{id}:
+  /messages/{id}:
     patch:
       summary: Update Message Content
       description: Edits the text content of a message sent by the authenticated user.
@@ -600,7 +600,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/sessions:
+  /sessions:
     get:
       summary: List Active Sessions
       description: Lists active refresh token sessions for the authenticated user.
@@ -632,7 +632,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/sessions/{id}:
+  /sessions/{id}:
     delete:
       summary: Revoke Session
       description: Revokes a specific active session by session UUID.
@@ -674,7 +674,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/ws:
+  /ws:
     get:
       summary: Real-Time WebSocket Connection
       description: Establishes a persistent WebSocket connection for receiving real-time chat push notifications. Requires HTTP connection upgrade.

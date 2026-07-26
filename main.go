@@ -150,7 +150,7 @@ func main() {
 	mux.Handle("POST /messages", protectedChain.ThenFunc(api.HandlerSendMessage))
 	mux.Handle("PATCH /messages/{id}", protectedChain.ThenFunc(api.HandlerUpdateMessage))
 
-	globalChain := alice.New(api.SecurityHeadersMiddleware)
+	globalChain := alice.New(handlers.CORSMiddleware, api.SecurityHeadersMiddleware)
 
 	s := &http.Server{
 		Addr:         ":" + port,

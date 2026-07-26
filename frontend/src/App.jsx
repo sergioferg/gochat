@@ -1,122 +1,197 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect } from "react";
+import Auth from "./components/Auth";
+import UserProfile from "./components/UserProfile";
+import { fetchCurrentUser, logoutUser, getToken } from "./api";
+import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0)
+    const [currentPage, setCurrentPage] = useState("chat"); // 'chat' | 'auth'
+    const [currentUser, setCurrentUser] = useState(null);
+    const [initializing, setInitializing] = useState(true);
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    // Original Chat State
+    const [message, setMessage] = useState("");
+    const [chatLog, setChatLog] = useState([
+        { sender: "system", text: "Welcome to GoChat!" },
+    ]);
 
-      <div className="ticks"></div>
+    // Restore user session on mount
+    useEffect(() => {
+        async function loadUser() {
+            if (getToken()) {
+                try {
+                    const user = await fetchCurrentUser();
+                    setCurrentUser(user);
+                } catch (err) {
+                    console.warn("Session restore note:", err.message);
+                }
+            }
+            setInitializing(false);
+        }
+        loadUser();
+    }, []);
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+    const handleLoginSuccess = async (user) => {
+        if (user && user.email) {
+            setCurrentUser(user);
+        } else {
+            try {
+                const fullUser = await fetchCurrentUser();
+                setCurrentUser(fullUser);
+            } catch (err) {
+                console.error("Could not fetch profile:", err);
+            }
+        }
+        // Automatically navigate to chat page upon successful login
+        setCurrentPage("chat");
+    };
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    const handleLogout = async () => {
+        await logoutUser();
+        setCurrentUser(null);
+    };
+
+    const handleSend = async (e) => {
+        e.preventDefault();
+        if (!message.trim()) return;
+
+        const userMessage = message;
+
+        setChatLog((prevLog) => [
+            ...prevLog,
+            { sender: "me", text: userMessage },
+        ]);
+        setMessage("");
+
+        try {
+            const response = await fetch("http://localhost:8080/messages", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(getToken()
+                        ? { Authorization: `Bearer ${getToken()}` }
+                        : {}),
+                },
+                // Adjust this payload object keys (e.g., text, content, or chat_id)
+                // to match whatever your Go HandlerSendMessage struct expects!
+                body: JSON.stringify({ text: userMessage }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            setChatLog((prevLog) => [
+                ...prevLog,
+                { sender: "system", text: data.reply || "Message received!" },
+            ]);
+        } catch (error) {
+            console.error("Failed to fetch:", error);
+            setChatLog((prevLog) => [
+                ...prevLog,
+                {
+                    sender: "system",
+                    text: "⚠️ Could not connect to the server.",
+                },
+            ]);
+        }
+    };
+
+    if (initializing) {
+        return (
+            <div className="chat-container">
+                <header className="top-nav">
+                    <span className="nav-brand">GoChat</span>
+                </header>
+                <div className="page-container">
+                    <p>Loading application...</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="chat-container">
+            {/* Top Navigation Bar for switching between pages */}
+            <header className="top-nav">
+                <span className="nav-brand">GoChat</span>
+                <div className="nav-links">
+                    <button
+                        type="button"
+                        className={`nav-btn ${currentPage === "chat" ? "active" : ""}`}
+                        onClick={() => setCurrentPage("chat")}
+                    >
+                        💬 Chat Page
+                    </button>
+                    <button
+                        type="button"
+                        className={`nav-btn ${currentPage === "auth" ? "active" : ""}`}
+                        onClick={() => setCurrentPage("auth")}
+                    >
+                        {currentUser
+                            ? `👤 Account (${currentUser.nickname || currentUser.email})`
+                            : "🔑 Login / Register"}
+                    </button>
+                </div>
+            </header>
+
+            {/* Page 1: Chat Page */}
+            {currentPage === "chat" && (
+                <main className="page-container">
+                    {currentUser && (
+                        <div
+                            className="user-status-summary"
+                            style={{ marginBottom: "12px", textAlign: "right" }}
+                        >
+                            Logged in as{" "}
+                            <strong>
+                                {currentUser.nickname || currentUser.email}
+                            </strong>
+                        </div>
+                    )}
+                    <div className="chat-window">
+                        {chatLog.map((msg, index) => (
+                            <div
+                                key={index}
+                                className={`message ${msg.sender}`}
+                            >
+                                {msg.text}
+                            </div>
+                        ))}
+                    </div>
+
+                    <form onSubmit={handleSend} className="chat-input-area">
+                        <input
+                            type="text"
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            placeholder="Type your message..."
+                            autoFocus
+                        />
+                        <button type="submit">Send</button>
+                    </form>
+                </main>
+            )}
+
+            {/* Page 2: Auth Page */}
+            {currentPage === "auth" && (
+                <main className="page-container">
+                    {currentUser ? (
+                        <UserProfile
+                            user={currentUser}
+                            onLogout={handleLogout}
+                        />
+                    ) : (
+                        <div className="auth-wrapper">
+                            <Auth onLoginSuccess={handleLoginSuccess} />
+                        </div>
+                    )}
+                </main>
+            )}
+        </div>
+    );
 }
 
-export default App
+export default App;

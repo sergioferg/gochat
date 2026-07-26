@@ -1,0 +1,95 @@
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080";
+
+let accessToken = localStorage.getItem("token") || "";
+
+export const setToken = (token) => {
+  accessToken = token || "";
+  if (token) {
+    localStorage.setItem("token", token);
+  } else {
+    localStorage.removeItem("token");
+  }
+};
+
+export const getToken = () => accessToken;
+
+async function request(endpoint, options = {}) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...options.headers,
+  };
+
+  if (accessToken) {
+    headers["Authorization"] = `Bearer ${accessToken}`;
+  }
+
+  const response = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers,
+    credentials: "include",
+  });
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const errorMsg = data.error || `Request failed with status ${response.status}`;
+    throw new Error(errorMsg);
+  }
+
+  return data;
+}
+
+export async function loginUser(email, password) {
+  const data = await request("/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+  if (data.token) {
+    setToken(data.token);
+  }
+  return data;
+}
+
+export async function registerUser(nickname, email, password) {
+  return await request("/users", {
+    method: "POST",
+    body: JSON.stringify({ nickname, email, password }),
+  });
+}
+
+export async function fetchCurrentUser() {
+  return await request("/me", {
+    method: "GET",
+  });
+}
+
+export async function verifyUser(token) {
+  return await request("/verify", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+}
+
+export async function logoutUser() {
+  try {
+    await request("/logout", {
+      method: "POST",
+    });
+  } finally {
+    setToken("");
+  }
+}
+
+export async function refreshToken() {
+  const data = await request("/refresh", {
+    method: "POST",
+  });
+  if (data && data.token) {
+    setToken(data.token);
+  }
+  return data;
+}
