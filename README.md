@@ -80,9 +80,16 @@ npm run dev
 
 GoChat is architected as a decoupled monorepo, with separate cloud deployment targets for backend and frontend services:
 
-- **Backend Deployment:** The containerized backend is deployed on **Azure App Services** behind a custom domain with automated SSL encryption via **App Service Managed Certificates**.
+- **Backend Deployment:** The containerized backend is deployed on **Azure App Service** behind a custom domain with automated SSL encryption via **App Service Managed Certificates**.
 - **Frontend Deployment:** Deployed using **Azure Static Web Apps** with automated **GitHub Actions** CI/CD pipelines and attached to its own custom root domain.
 - **Communication Protocol:** The frontend interacts with the Go backend via **CORS-enabled RESTful endpoints** for user management and authentication, and establishes long-lived **WebSocket** connections for instant message routing.
+
+### API Documentation
+
+For full details on authentication, REST endpoints, request/response bodies, and real-time WebSocket event formats, refer to the API documentation:
+
+- 📖 **[API Reference Guide](docs/API.md)**
+- 📄 **[OpenAPI 3.0 Specification](docs/openapi.yaml)**
 
 ---
 
