@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { loginUser, registerUser, verifyUser } from "../api";
+import { loginUser, registerUser } from "../api";
 
 export default function Auth({ onLoginSuccess }) {
-  const [mode, setMode] = useState("login"); // 'login' | 'register' | 'verify'
+  const [mode, setMode] = useState("login"); // 'login' | 'register'
   
   // Login state
   const [loginEmail, setLoginEmail] = useState("");
@@ -13,9 +13,6 @@ export default function Auth({ onLoginSuccess }) {
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
-
-  // Verify state
-  const [verifyToken, setVerifyToken] = useState("");
 
   // Status state
   const [loading, setLoading] = useState(false);
@@ -73,33 +70,10 @@ export default function Auth({ onLoginSuccess }) {
     try {
       const res = await registerUser(regNickname, regEmail, regPassword);
       setSuccessMsg(
-        `Account created successfully for ${res.nickname || regNickname}! Please check your email for the verification token.`
+        `Account created successfully for ${res?.nickname || regNickname}. Please check your email to complete verification.`
       );
-      // Automatically switch to verify mode or pre-fill email
-      setMode("verify");
     } catch (err) {
       setError(err.message || "Failed to register account");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerify = async (e) => {
-    e.preventDefault();
-    clearMessages();
-
-    if (!verifyToken.trim()) {
-      setError("Please enter a verification token.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await verifyUser(verifyToken.trim());
-      setSuccessMsg(res?.message || "Account verified successfully! You can now log in.");
-      setMode("login");
-    } catch (err) {
-      setError(err.message || "Failed to verify email");
     } finally {
       setLoading(false);
     }
@@ -121,13 +95,6 @@ export default function Auth({ onLoginSuccess }) {
           onClick={() => handleModeSwitch("register")}
         >
           Register
-        </button>
-        <button
-          type="button"
-          className={mode === "verify" ? "active" : ""}
-          onClick={() => handleModeSwitch("verify")}
-        >
-          Verify Email
         </button>
       </div>
 
@@ -222,32 +189,6 @@ export default function Auth({ onLoginSuccess }) {
           <button type="submit" disabled={loading} className="btn-primary">
             {loading && <span className="spinner" />}
             <span>{loading ? "Registering..." : "Register"}</span>
-          </button>
-        </form>
-      )}
-
-      {mode === "verify" && (
-        <form onSubmit={handleVerify} className="auth-form">
-          <h2>Verify Account</h2>
-          <p className="form-help">
-            Enter the verification token sent to your email to activate your account.
-          </p>
-
-          <div className="form-group">
-            <label htmlFor="verify-token">Verification Token</label>
-            <input
-              id="verify-token"
-              type="text"
-              placeholder="e.g. verify_token_12345"
-              value={verifyToken}
-              onChange={(e) => setVerifyToken(e.target.value)}
-              required
-            />
-          </div>
-
-          <button type="submit" disabled={loading} className="btn-primary">
-            {loading && <span className="spinner" />}
-            <span>{loading ? "Verifying..." : "Verify Token"}</span>
           </button>
         </form>
       )}
