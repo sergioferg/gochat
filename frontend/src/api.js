@@ -1,4 +1,19 @@
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080";
+export const API_BASE =
+  import.meta.env.VITE_API_BASE ||
+  (import.meta.env.PROD
+    ? "https://api.trygochat.tech"
+    : "http://localhost:8080");
+
+export const WS_BASE =
+  import.meta.env.VITE_WS_BASE ||
+  (import.meta.env.PROD
+    ? "wss://api.trygochat.tech"
+    : "ws://localhost:8080");
+
+export function getWebSocketUrl(path = "/ws") {
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${WS_BASE}${cleanPath}`;
+}
 
 let accessToken = localStorage.getItem("token") || "";
 
@@ -93,3 +108,11 @@ export async function refreshToken() {
   }
   return data;
 }
+
+export async function sendMessage(text) {
+  return await request("/messages", {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
+}
+

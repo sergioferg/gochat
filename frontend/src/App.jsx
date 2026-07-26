@@ -1,19 +1,15 @@
 import { useState, useEffect } from "react";
-import Auth from "./components/Auth";
-import UserProfile from "./components/UserProfile";
+import { Routes, Route, NavLink, Link, useNavigate } from "react-router-dom";
+import Home from "./pages/Home";
+import LoginPage from "./pages/LoginPage";
+import ChatPage from "./pages/ChatPage";
 import { fetchCurrentUser, logoutUser, getToken } from "./api";
 import "./App.css";
 
 function App() {
-    const [currentPage, setCurrentPage] = useState("chat"); // 'chat' | 'auth'
     const [currentUser, setCurrentUser] = useState(null);
     const [initializing, setInitializing] = useState(true);
-
-    // Original Chat State
-    const [message, setMessage] = useState("");
-    const [chatLog, setChatLog] = useState([
-        { sender: "system", text: "Welcome to GoChat!" },
-    ]);
+    const navigate = useNavigate();
 
     // Restore user session on mount
     useEffect(() => {
@@ -43,60 +39,12 @@ function App() {
             }
         }
         // Automatically navigate to chat page upon successful login
-        setCurrentPage("chat");
+        navigate("/chat");
     };
 
     const handleLogout = async () => {
         await logoutUser();
         setCurrentUser(null);
-    };
-
-    const handleSend = async (e) => {
-        e.preventDefault();
-        if (!message.trim()) return;
-
-        const userMessage = message;
-
-        setChatLog((prevLog) => [
-            ...prevLog,
-            { sender: "me", text: userMessage },
-        ]);
-        setMessage("");
-
-        try {
-            const response = await fetch("http://localhost:8080/messages", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    ...(getToken()
-                        ? { Authorization: `Bearer ${getToken()}` }
-                        : {}),
-                },
-                // Adjust this payload object keys (e.g., text, content, or chat_id)
-                // to match whatever your Go HandlerSendMessage struct expects!
-                body: JSON.stringify({ text: userMessage }),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Server error: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            setChatLog((prevLog) => [
-                ...prevLog,
-                { sender: "system", text: data.reply || "Message received!" },
-            ]);
-        } catch (error) {
-            console.error("Failed to fetch:", error);
-            setChatLog((prevLog) => [
-                ...prevLog,
-                {
-                    sender: "system",
-                    text: "⚠️ Could not connect to the server.",
-                },
-            ]);
-        }
     };
 
     if (initializing) {
@@ -114,82 +62,58 @@ function App() {
 
     return (
         <div className="chat-container">
-            {/* Top Navigation Bar for switching between pages */}
+            {/* Top Navigation Bar with react-router-dom Link/NavLink */}
             <header className="top-nav">
-                <span className="nav-brand">GoChat</span>
+                <Link to="/" className="nav-brand" style={{ textDecoration: "none" }}>
+                    GoChat
+                </Link>
                 <div className="nav-links">
-                    <button
-                        type="button"
-                        className={`nav-btn ${currentPage === "chat" ? "active" : ""}`}
-                        onClick={() => setCurrentPage("chat")}
+                    <NavLink
+                        to="/"
+                        end
+                        className={({ isActive }) => `nav-btn ${isActive ? "active" : ""}`}
+                        style={{ textDecoration: "none" }}
+                    >
+                        🏠 Home
+                    </NavLink>
+                    <NavLink
+                        to="/chat"
+                        className={({ isActive }) => `nav-btn ${isActive ? "active" : ""}`}
+                        style={{ textDecoration: "none" }}
                     >
                         💬 Chat Page
-                    </button>
-                    <button
-                        type="button"
-                        className={`nav-btn ${currentPage === "auth" ? "active" : ""}`}
-                        onClick={() => setCurrentPage("auth")}
+                    </NavLink>
+                    <NavLink
+                        to="/login"
+                        className={({ isActive }) => `nav-btn ${isActive ? "active" : ""}`}
+                        style={{ textDecoration: "none" }}
                     >
                         {currentUser
                             ? `👤 Account (${currentUser.nickname || currentUser.email})`
                             : "🔑 Login / Register"}
-                    </button>
+                    </NavLink>
                 </div>
             </header>
 
-            {/* Page 1: Chat Page */}
-            {currentPage === "chat" && (
-                <main className="page-container">
-                    {currentUser && (
-                        <div
-                            className="user-status-summary"
-                            style={{ marginBottom: "12px", textAlign: "right" }}
-                        >
-                            Logged in as{" "}
-                            <strong>
-                                {currentUser.nickname || currentUser.email}
-                            </strong>
-                        </div>
-                    )}
-                    <div className="chat-window">
-                        {chatLog.map((msg, index) => (
-                            <div
-                                key={index}
-                                className={`message ${msg.sender}`}
-                            >
-                                {msg.text}
-                            </div>
-                        ))}
-                    </div>
-
-                    <form onSubmit={handleSend} className="chat-input-area">
-                        <input
-                            type="text"
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            placeholder="Type your message..."
-                            autoFocus
-                        />
-                        <button type="submit">Send</button>
-                    </form>
-                </main>
-            )}
-
-            {/* Page 2: Auth Page */}
-            {currentPage === "auth" && (
-                <main className="page-container">
-                    {currentUser ? (
-                        <UserProfile
-                            user={currentUser}
+            {/* Page Routes */}
+            <Routes>
+                <Route path="/" element={<Home currentUser={currentUser} />} />
+                <Route
+                    path="/login"
+                    element={
+                        <LoginPage
+                            currentUser={currentUser}
+                            onLoginSuccess={handleLoginSuccess}
                             onLogout={handleLogout}
                         />
-                    ) : (
-                        <div className="auth-wrapper">
-                            <Auth onLoginSuccess={handleLoginSuccess} />
-                        </div>
-                    )}
-                </main>
-            )}
+                    }
+                />
+                <Route
+                    path="/chat"
+                    element={<ChatPage currentUser={currentUser} />}
+                />
+                <Route path="*" element={<Home currentUser={currentUser} />} />
+            </Routes>
         </div>
     );
 }
