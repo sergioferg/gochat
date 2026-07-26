@@ -66,7 +66,7 @@ func main() {
 	var githubOAuthConfig = &oauth2.Config{
 		ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
 		ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
-		RedirectURL:  fmt.Sprintf("%s/api/oauth/github/callback", baseURL),
+		RedirectURL:  fmt.Sprintf("%s/oauth/github/callback", baseURL),
 		Scopes:       []string{"read:user", "user:email"},
 		Endpoint:     github.Endpoint,
 	}
@@ -112,43 +112,43 @@ func main() {
 	)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/healthz", handlers.HandlerEndpoint)
+	mux.HandleFunc("GET /healthz", handlers.HandlerEndpoint)
 
 	// Refresh JWT
-	mux.HandleFunc("POST /api/refresh", api.HandlerRefreshAccessToken)
+	mux.HandleFunc("POST /refresh", api.HandlerRefreshAccessToken)
 
 	// User auth
-	mux.HandleFunc("POST /api/login", api.HandlerUserLogin)
-	mux.HandleFunc("POST /api/users", api.HandlerUserCreate)
-	mux.HandleFunc("POST /api/verify", api.HandlerUserVerify)
+	mux.HandleFunc("POST /login", api.HandlerUserLogin)
+	mux.HandleFunc("POST /users", api.HandlerUserCreate)
+	mux.HandleFunc("POST /verify", api.HandlerUserVerify)
 
 	// Session termination
-	mux.HandleFunc("POST /api/logout", api.HandlerUserLogout)
+	mux.HandleFunc("POST /logout", api.HandlerUserLogout)
 
 	// Github auth/session
-	mux.HandleFunc("GET /api/oauth/github/login", api.HandlerGitHubLogin)
-	mux.HandleFunc("GET /api/oauth/github/callback", api.HandlerGitHubCallback)
+	mux.HandleFunc("GET /oauth/github/login", api.HandlerGitHubLogin)
+	mux.HandleFunc("GET /oauth/github/callback", api.HandlerGitHubCallback)
 
 	protectedChain := alice.New(api.AuthMiddleware)
 
 	// Chat management
-	mux.Handle("GET /api/chats", protectedChain.ThenFunc(api.HandlerGetUserChats))
-	mux.Handle("POST /api/chats", protectedChain.ThenFunc(api.HandlerCreateChat))
-	mux.Handle("GET /api/chats/{id}/messages", protectedChain.ThenFunc(api.HandlerGetMessages))
+	mux.Handle("GET /chats", protectedChain.ThenFunc(api.HandlerGetUserChats))
+	mux.Handle("POST /chats", protectedChain.ThenFunc(api.HandlerCreateChat))
+	mux.Handle("GET /chats/{id}/messages", protectedChain.ThenFunc(api.HandlerGetMessages))
 
 	// Active session management
-	mux.Handle("GET /api/sessions", protectedChain.ThenFunc(api.HandlerGetSessions))
-	mux.Handle("DELETE /api/sessions/{id}", protectedChain.ThenFunc(api.HandlerRevokeSession))
+	mux.Handle("GET /sessions", protectedChain.ThenFunc(api.HandlerGetSessions))
+	mux.Handle("DELETE /sessions/{id}", protectedChain.ThenFunc(api.HandlerRevokeSession))
 
 	// Delete and Update users
-	mux.Handle("DELETE /api/users", protectedChain.ThenFunc(api.HandlerUserDelete))
-	mux.Handle("PATCH /api/users", protectedChain.ThenFunc(api.HandlerUserUpdate))
-	mux.Handle("GET /api/me", api.AuthMiddleware(http.HandlerFunc(api.HandlerGetMe)))
+	mux.Handle("DELETE /users", protectedChain.ThenFunc(api.HandlerUserDelete))
+	mux.Handle("PATCH /users", protectedChain.ThenFunc(api.HandlerUserUpdate))
+	mux.Handle("GET /me", api.AuthMiddleware(http.HandlerFunc(api.HandlerGetMe)))
 
 	// Real-time connections / Messages
-	mux.Handle("GET /api/ws", protectedChain.ThenFunc(api.HandlerWebSocket))
-	mux.Handle("POST /api/messages", protectedChain.ThenFunc(api.HandlerSendMessage))
-	mux.Handle("PATCH /api/messages/{id}", protectedChain.ThenFunc(api.HandlerUpdateMessage))
+	mux.Handle("GET /ws", protectedChain.ThenFunc(api.HandlerWebSocket))
+	mux.Handle("POST /messages", protectedChain.ThenFunc(api.HandlerSendMessage))
+	mux.Handle("PATCH /messages/{id}", protectedChain.ThenFunc(api.HandlerUpdateMessage))
 
 	globalChain := alice.New(api.SecurityHeadersMiddleware)
 
