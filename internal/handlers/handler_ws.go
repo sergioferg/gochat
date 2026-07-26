@@ -14,7 +14,6 @@ import (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	// In production, check the origin to prevent Cross-Site WebSocket Hijacking (CSWSH)
 	CheckOrigin: func(r *http.Request) bool {
 		return true // Allow all origins for development
 	},
@@ -42,7 +41,7 @@ func (api *API) HandlerWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	api.WSManager.AddClient(client)
 
-	// Ensure cleanup happens when the function exits (e.g., connection drops)
+	// Ensure cleanup happens when the function exits
 	defer func() {
 		api.WSManager.RemoveClient(client)
 		conn.Close()
