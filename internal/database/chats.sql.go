@@ -71,8 +71,8 @@ SELECT
     c.name AS chat_name,
     c.is_group,
     cp.last_read_at,
-    COALESCE((SELECT content FROM messages m WHERE m.chat_id = c.id ORDER BY m.id DESC LIMIT 1), '') AS last_message_content,
-    COALESCE((SELECT id FROM messages m WHERE m.chat_id = c.id ORDER BY m.id DESC LIMIT 1), '00000000-0000-0000-0000-000000000000'::uuid) AS last_message_id
+    (COALESCE((SELECT content FROM messages m WHERE m.chat_id = c.id ORDER BY m.id DESC LIMIT 1), ''))::text AS last_message_content,
+    (COALESCE((SELECT id FROM messages m WHERE m.chat_id = c.id ORDER BY m.id DESC LIMIT 1), '00000000-0000-0000-0000-000000000000'::uuid))::uuid AS last_message_id
 FROM chats c
 JOIN chat_participants cp ON c.id = cp.chat_id
 WHERE cp.user_id = $1
@@ -84,8 +84,8 @@ type GetUserChatsRow struct {
 	ChatName           *string
 	IsGroup            bool
 	LastReadAt         time.Time
-	LastMessageContent interface{}
-	LastMessageID      interface{}
+	LastMessageContent string
+	LastMessageID      uuid.UUID
 }
 
 func (q *Queries) GetUserChats(ctx context.Context, userID uuid.UUID) ([]GetUserChatsRow, error) {
