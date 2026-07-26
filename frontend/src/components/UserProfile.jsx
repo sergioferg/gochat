@@ -4,8 +4,8 @@ export default function UserProfile({ user, onLogout }) {
   return (
     <div className="user-profile-card">
       <div className="profile-header">
-        <h2>Logged in as {user.nickname || user.email}</h2>
-        <button type="button" onClick={onLogout} className="btn-secondary">
+        <h2>{user.nickname || user.email}</h2>
+        <button type="button" onClick={onLogout} className="btn-danger">
           Log Out
         </button>
       </div>
@@ -19,7 +19,7 @@ export default function UserProfile({ user, onLogout }) {
         </div>
         <div className="profile-item">
           <strong>Status:</strong>{" "}
-          <span className={`status-badge status-${user.status}`}>
+          <span className={`status-badge status-${user.status || "active"}`}>
             {user.status || "active"}
           </span>
         </div>

@@ -162,7 +162,8 @@ export default function Auth({ onLoginSuccess }) {
           </div>
 
           <button type="submit" disabled={loading} className="btn-primary">
-            {loading ? "Logging in..." : "Log In"}
+            {loading && <span className="spinner" />}
+            <span>{loading ? "Logging in..." : "Log In"}</span>
           </button>
         </form>
       )}
@@ -219,7 +220,8 @@ export default function Auth({ onLoginSuccess }) {
           </div>
 
           <button type="submit" disabled={loading} className="btn-primary">
-            {loading ? "Registering..." : "Register"}
+            {loading && <span className="spinner" />}
+            <span>{loading ? "Registering..." : "Register"}</span>
           </button>
         </form>
       )}
@@ -244,7 +246,8 @@ export default function Auth({ onLoginSuccess }) {
           </div>
 
           <button type="submit" disabled={loading} className="btn-primary">
-            {loading ? "Verifying..." : "Verify Token"}
+            {loading && <span className="spinner" />}
+            <span>{loading ? "Verifying..." : "Verify Token"}</span>
           </button>
         </form>
       )}

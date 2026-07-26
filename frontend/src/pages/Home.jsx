@@ -1,46 +1,66 @@
 import { Link } from "react-router-dom";
 
-export default function Home({ currentUser }) {
+export default function Home({ currentUser, onOpenAuthModal }) {
   return (
     <main className="page-container">
-      <div className="hero-card" style={{ textAlign: "center", padding: "40px 20px" }}>
-        <h1 style={{ fontSize: "2.2rem", marginBottom: "12px" }}>Welcome to GoChat 🚀</h1>
-        <p style={{ fontSize: "1.1rem", color: "var(--text)", marginBottom: "24px", maxWidth: "600px", marginInline: "auto" }}>
-          A fast, real-time messaging application powered by a High-Performance Go backend hosted on Azure App Service and a React frontend on Azure Static Web Apps.
+      <div className="hero-card" style={{ textAlign: "center", padding: "var(--space-8) var(--space-4)" }}>
+        <h1>Welcome to GoChat</h1>
+        <p style={{ maxWidth: "600px", margin: "0 auto var(--space-6)" }}>
+          A real-time messaging application connected to a Go server on Azure App Service and deployed via Azure Static Web Apps.
         </p>
 
         {currentUser ? (
-          <div style={{ marginBottom: "28px" }}>
-            <p style={{ fontSize: "1rem", marginBottom: "16px" }}>
-              Logged in as <strong>{currentUser.nickname || currentUser.email}</strong>
+          <div style={{ marginBottom: "var(--space-8)" }}>
+            <p style={{ marginBottom: "var(--space-4)" }}>
+              Authenticated as <strong>{currentUser.nickname || currentUser.email}</strong>
             </p>
-            <Link to="/chat" className="btn-primary" style={{ display: "inline-block", width: "auto", padding: "12px 24px", textDecoration: "none" }}>
-              💬 Open Chat Interface
-            </Link>
+            <div style={{ display: "flex", gap: "var(--space-4)", justifyContent: "center", flexWrap: "wrap" }}>
+              <Link to="/chat" className="btn-primary" style={{ width: "auto", textDecoration: "none" }}>
+                Open Chat Interface
+              </Link>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={onOpenAuthModal}
+              >
+                Account Details
+              </button>
+            </div>
           </div>
         ) : (
-          <div style={{ display: "flex", gap: "16px", justifyContent: "center", marginBottom: "28px", flexWrap: "wrap" }}>
-            <Link to="/login" className="btn-primary" style={{ display: "inline-block", width: "auto", padding: "12px 24px", textDecoration: "none" }}>
-              🔑 Sign In / Register
-            </Link>
-            <Link to="/chat" className="btn-secondary" style={{ display: "inline-block", width: "auto", padding: "12px 24px", color: "var(--text-h)", borderColor: "var(--border)", textDecoration: "none" }}>
-              💬 Launch Guest Chat
+          <div style={{ display: "flex", gap: "var(--space-4)", justifyContent: "center", marginBottom: "var(--space-8)", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={onOpenAuthModal}
+              style={{ width: "auto" }}
+            >
+              Sign In / Register
+            </button>
+            <Link to="/chat" className="btn-secondary" style={{ width: "auto", textDecoration: "none" }}>
+              Open Chat Interface
             </Link>
           </div>
         )}
 
-        <div style={{ marginTop: "32px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", textAlign: "left" }}>
-          <div style={{ padding: "16px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg)" }}>
-            <h3 style={{ marginTop: 0 }}>⚡ Go Backend</h3>
-            <p style={{ fontSize: "0.875rem", color: "var(--text)", margin: 0 }}>Powered by Go on Azure App Service at api.trygochat.tech.</p>
+        <div style={{ marginTop: "var(--space-8)", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "var(--space-4)", textAlign: "left" }}>
+          <div style={{ padding: "var(--space-4)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", background: "var(--color-bg)" }}>
+            <h3 style={{ marginTop: 0, marginBottom: "var(--space-2)" }}>Go Backend</h3>
+            <p style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-muted)", margin: 0 }}>
+              Hosted on Azure App Service at api.trygochat.tech.
+            </p>
           </div>
-          <div style={{ padding: "16px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg)" }}>
-            <h3 style={{ marginTop: 0 }}>☁️ Azure Static Web Apps</h3>
-            <p style={{ fontSize: "0.875rem", color: "var(--text)", margin: 0 }}>Fast SPA hosting with SPA fallback routing enabled.</p>
+          <div style={{ padding: "var(--space-4)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", background: "var(--color-bg)" }}>
+            <h3 style={{ marginTop: 0, marginBottom: "var(--space-2)" }}>Azure Static Web Apps</h3>
+            <p style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-muted)", margin: 0 }}>
+              Single Page Application with navigation fallback routing.
+            </p>
           </div>
-          <div style={{ padding: "16px", border: "1px solid var(--border)", borderRadius: "8px", background: "var(--bg)" }}>
-            <h3 style={{ marginTop: 0 }}>🔐 JWT Authentication</h3>
-            <p style={{ fontSize: "0.875rem", color: "var(--text)", margin: 0 }}>Secure user registration, email verification, and tokens.</p>
+          <div style={{ padding: "var(--space-4)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", background: "var(--color-bg)" }}>
+            <h3 style={{ marginTop: 0, marginBottom: "var(--space-2)" }}>JWT Authentication</h3>
+            <p style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-muted)", margin: 0 }}>
+              Token-based user session handling and email verification.
+            </p>
           </div>
         </div>
       </div>
