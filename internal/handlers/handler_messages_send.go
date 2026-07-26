@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/sergioferg/gochat/internal/database"
@@ -15,7 +16,7 @@ import (
 func (api *API) HandlerSendMessage(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		ChatID  uuid.UUID `json:"chat_id"`
-		Message string    `json:"message"`
+		Content string    `json:"content"`
 	}
 
 	userID, ok := r.Context().Value(UserIDContextKey).(uuid.UUID)
@@ -33,9 +34,14 @@ func (api *API) HandlerSendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if strings.TrimSpace(params.Content) == "" {
+		respond.WithError(w, http.StatusBadRequest, "Message content cannot be empty", nil)
+		return
+	}
+
 	message, err := api.DB.CreateMessage(r.Context(), database.CreateMessageParams{
 		ID:       uuid.Must(uuid.NewV7()),
-		Content:  params.Message,
+		Content:  params.Content,
 		SenderID: userID,
 		ChatID:   params.ChatID,
 	})
@@ -56,7 +62,7 @@ func (api *API) HandlerSendMessage(w http.ResponseWriter, r *http.Request) {
 		Type:          "new_message",
 		ChatID:        params.ChatID,
 		SenderID:      userID,
-		Content:       params.Message,
+		Content:       params.Content,
 		TargetUserIDs: targetIDs,
 	}
 
