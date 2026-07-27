@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Routes, Route, NavLink, Link, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import ChatPage from "./pages/ChatPage";
-import OAuthCallbackPage from "./pages/OAuthCallbackPage";
+import OAuthCallback from "./pages/OAuthCallback";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 import Auth from "./components/Auth";
 import UserProfile from "./components/UserProfile";
 import { fetchCurrentUser, logoutUser, getToken } from "./api";
@@ -151,7 +152,15 @@ function App() {
                 <Route
                     path="/oauth-callback"
                     element={
-                        <OAuthCallbackPage
+                        <OAuthCallback
+                            onLoginSuccess={handleLoginSuccess}
+                        />
+                    }
+                />
+                <Route
+                    path="/verify-email"
+                    element={
+                        <VerifyEmailPage
                             onOpenAuthModal={handleOpenAuthModal}
                         />
                     }

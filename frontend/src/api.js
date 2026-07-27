@@ -26,16 +26,17 @@ export const setToken = (token) => {
   }
 };
 
-export const getToken = () => accessToken;
+export const getToken = () => localStorage.getItem("token") || accessToken || "";
 
 async function request(endpoint, options = {}) {
+  const token = getToken();
   const headers = {
     "Content-Type": "application/json",
     ...options.headers,
   };
 
-  if (accessToken) {
-    headers["Authorization"] = `Bearer ${accessToken}`;
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
