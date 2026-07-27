@@ -223,7 +223,7 @@ func (api *API) HandlerGitHubCallback(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   60 * 60 * 24 * 60, // 60 days (same as db duration)
 	})
 
-	frontendURL := fmt.Sprintf("%s/oauth-callback#access_token=%s", api.BaseURL, accessToken)
+	frontendURL := fmt.Sprintf("%s/oauth-callback#access_token=%s", api.FrontendURL, accessToken)
 
 	http.Redirect(w, r, frontendURL, http.StatusFound)
 }

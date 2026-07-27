@@ -32,10 +32,18 @@ export default function Home({ currentUser, onOpenAuthModal }) {
             <button
               type="button"
               className="btn-primary"
-              onClick={onOpenAuthModal}
+              onClick={() => onOpenAuthModal("login")}
               style={{ width: "auto" }}
             >
-              Sign In / Register
+              Log In
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => onOpenAuthModal("register")}
+              style={{ width: "auto" }}
+            >
+              Register
             </button>
           </div>
         )}

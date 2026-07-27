@@ -84,9 +84,9 @@ type mockRows struct {
 	err  error
 }
 
-func (r *mockRows) Close() {}
-func (r *mockRows) Err() error { return r.err }
-func (r *mockRows) CommandTag() pgconn.CommandTag { return pgconn.CommandTag{} }
+func (r *mockRows) Close()                                       {}
+func (r *mockRows) Err() error                                   { return r.err }
+func (r *mockRows) CommandTag() pgconn.CommandTag                { return pgconn.CommandTag{} }
 func (r *mockRows) FieldDescriptions() []pgconn.FieldDescription { return nil }
 
 func (r *mockRows) Next() bool {
@@ -1183,7 +1183,7 @@ func TestHandlerUserCreate(t *testing.T) {
 			dbQueries := database.New(mockDB)
 			api := &handlers.API{
 				DB:           dbQueries,
-				BaseURL:      "http://localhost:8080",
+				BackendURL:   "http://localhost:8080",
 				ResendApiKey: "test_resend_key",
 			}
 

@@ -16,6 +16,7 @@ type API struct {
 	GithubOauthCfg *oauth2.Config
 	Secret         string
 	ResendApiKey   string
-	BaseURL        string
+	BackendURL     string
+	FrontendURL    string
 	Platform       string
 }

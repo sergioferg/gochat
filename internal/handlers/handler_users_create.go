@@ -85,7 +85,7 @@ func (api *API) HandlerUserCreate(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: Replace unmanaged goroutine with a job queue or worker pool for reliable asynchronous email delivery and error retries.
 	go func(email, nick, token string) {
-		url := fmt.Sprintf("%s/verify-email?token=%s", api.BaseURL, token)
+		url := fmt.Sprintf("%s/verify-email?token=%s", api.FrontendURL, token)
 		_ = mailer.SendResendEmail(email, nick, url, api.ResendApiKey)
 	}(user.Email, user.Nickname, rawToken)
 

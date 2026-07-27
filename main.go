@@ -50,9 +50,13 @@ func main() {
 	if resendKey == "" {
 		logrus.Fatal("RESEND_API_KEY must be set")
 	}
-	baseURL := os.Getenv("BASE_URL")
-	if baseURL == "" {
-		baseURL = "http://localhost:8080"
+	backURL := os.Getenv("BACK_URL")
+	if backURL == "" {
+		backURL = "http://localhost:8080"
+	}
+	frontURL := os.Getenv("FRONT_URL")
+	if frontURL == "" {
+		frontURL = "http://localhost:5173"
 	}
 	platform := os.Getenv("PLATFORM")
 	if platform == "" {
@@ -66,7 +70,7 @@ func main() {
 	var githubOAuthConfig = &oauth2.Config{
 		ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
 		ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
-		RedirectURL:  fmt.Sprintf("%s/oauth/github/callback", baseURL),
+		RedirectURL:  fmt.Sprintf("%s/oauth/github/callback", backURL),
 		Scopes:       []string{"read:user", "user:email"},
 		Endpoint:     github.Endpoint,
 	}
@@ -91,7 +95,8 @@ func main() {
 		GithubOauthCfg: githubOAuthConfig,
 		Secret:         secret,
 		ResendApiKey:   resendKey,
-		BaseURL:        baseURL,
+		BackendURL:     backURL,
+		FrontendURL:    frontURL,
 	}
 
 	// Start listening in the background

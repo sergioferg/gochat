@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Routes, Route, NavLink, Link, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import ChatPage from "./pages/ChatPage";
+import OAuthCallbackPage from "./pages/OAuthCallbackPage";
 import Auth from "./components/Auth";
 import UserProfile from "./components/UserProfile";
 import { fetchCurrentUser, logoutUser, getToken } from "./api";
@@ -11,11 +12,21 @@ function App() {
     const [currentUser, setCurrentUser] = useState(null);
     const [initializing, setInitializing] = useState(true);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [authMode, setAuthMode] = useState("login");
     const location = useLocation();
 
-    // Open modal if user navigated directly to /login
+    const handleOpenAuthModal = (mode = "login") => {
+        setAuthMode(mode);
+        setIsAuthModalOpen(true);
+    };
+
+    // Open modal if user navigated directly to /login or /register
     useEffect(() => {
         if (location.pathname === "/login") {
+            setAuthMode("login");
+            setIsAuthModalOpen(true);
+        } else if (location.pathname === "/register") {
+            setAuthMode("register");
             setIsAuthModalOpen(true);
         }
     }, [location.pathname]);
@@ -79,32 +90,41 @@ function App() {
                     GoChat
                 </Link>
                 <div className="nav-links">
-                    <NavLink
-                        to="/"
-                        end
-                        className={({ isActive }) => `nav-btn ${isActive ? "active" : ""}`}
-                        style={{ textDecoration: "none" }}
-                    >
-                        Home
-                    </NavLink>
-                    {currentUser && (
-                        <NavLink
-                            to="/chat"
-                            className={({ isActive }) => `nav-btn ${isActive ? "active" : ""}`}
-                            style={{ textDecoration: "none" }}
-                        >
-                            Chat
-                        </NavLink>
+                    {currentUser ? (
+                        <>
+                            <NavLink
+                                to="/chat"
+                                className={({ isActive }) => `nav-btn ${isActive ? "active" : ""}`}
+                                style={{ textDecoration: "none" }}
+                            >
+                                Chat
+                            </NavLink>
+                            <button
+                                type="button"
+                                className={`nav-btn ${isAuthModalOpen ? "active" : ""}`}
+                                onClick={() => handleOpenAuthModal("login")}
+                            >
+                                Account ({currentUser.nickname || currentUser.email})
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <button
+                                type="button"
+                                className={`nav-btn ${isAuthModalOpen && authMode === "login" ? "active" : ""}`}
+                                onClick={() => handleOpenAuthModal("login")}
+                            >
+                                Login
+                            </button>
+                            <button
+                                type="button"
+                                className={`nav-btn ${isAuthModalOpen && authMode === "register" ? "active" : ""}`}
+                                onClick={() => handleOpenAuthModal("register")}
+                            >
+                                Register
+                            </button>
+                        </>
                     )}
-                    <button
-                        type="button"
-                        className={`nav-btn ${isAuthModalOpen ? "active" : ""}`}
-                        onClick={() => setIsAuthModalOpen(true)}
-                    >
-                        {currentUser
-                            ? `Account (${currentUser.nickname || currentUser.email})`
-                            : "Login / Register"}
-                    </button>
                 </div>
             </header>
 
@@ -115,7 +135,7 @@ function App() {
                     element={
                         <Home
                             currentUser={currentUser}
-                            onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                            onOpenAuthModal={handleOpenAuthModal}
                         />
                     }
                 />
@@ -124,7 +144,15 @@ function App() {
                     element={
                         <Home
                             currentUser={currentUser}
-                            onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                            onOpenAuthModal={handleOpenAuthModal}
+                        />
+                    }
+                />
+                <Route
+                    path="/oauth-callback"
+                    element={
+                        <OAuthCallbackPage
+                            onOpenAuthModal={handleOpenAuthModal}
                         />
                     }
                 />
@@ -136,7 +164,7 @@ function App() {
                         ) : (
                             <Home
                                 currentUser={currentUser}
-                                onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                                onOpenAuthModal={handleOpenAuthModal}
                             />
                         )
                     }
@@ -146,7 +174,7 @@ function App() {
                     element={
                         <Home
                             currentUser={currentUser}
-                            onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                            onOpenAuthModal={handleOpenAuthModal}
                         />
                     }
                 />
@@ -179,7 +207,7 @@ function App() {
                                 }}
                             />
                         ) : (
-                            <Auth onLoginSuccess={handleLoginSuccess} />
+                            <Auth onLoginSuccess={handleLoginSuccess} initialMode={authMode} />
                         )}
                     </div>
                 </div>

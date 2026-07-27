@@ -27,7 +27,7 @@ func setupTestServer(t *testing.T, dbQueries *database.Queries, pool *pgxpool.Po
 		Pool:         pool,
 		Secret:       testSecret,
 		ResendApiKey: "re_fake_api_key",
-		BaseURL:      "http://localhost:8080",
+		BackendURL:   "http://localhost:8080",
 	}
 
 	mux := http.NewServeMux()
