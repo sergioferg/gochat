@@ -37,9 +37,6 @@ export default function Home({ currentUser, onOpenAuthModal }) {
             >
               Sign In / Register
             </button>
-            <Link to="/chat" className="btn-secondary" style={{ width: "auto", textDecoration: "none" }}>
-              Open Chat Interface
-            </Link>
           </div>
         )}
 

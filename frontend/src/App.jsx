@@ -87,13 +87,15 @@ function App() {
                     >
                         Home
                     </NavLink>
-                    <NavLink
-                        to="/chat"
-                        className={({ isActive }) => `nav-btn ${isActive ? "active" : ""}`}
-                        style={{ textDecoration: "none" }}
-                    >
-                        Chat
-                    </NavLink>
+                    {currentUser && (
+                        <NavLink
+                            to="/chat"
+                            className={({ isActive }) => `nav-btn ${isActive ? "active" : ""}`}
+                            style={{ textDecoration: "none" }}
+                        >
+                            Chat
+                        </NavLink>
+                    )}
                     <button
                         type="button"
                         className={`nav-btn ${isAuthModalOpen ? "active" : ""}`}
@@ -128,7 +130,16 @@ function App() {
                 />
                 <Route
                     path="/chat"
-                    element={<ChatPage currentUser={currentUser} />}
+                    element={
+                        currentUser ? (
+                            <ChatPage currentUser={currentUser} />
+                        ) : (
+                            <Home
+                                currentUser={currentUser}
+                                onOpenAuthModal={() => setIsAuthModalOpen(true)}
+                            />
+                        )
+                    }
                 />
                 <Route
                     path="*"
