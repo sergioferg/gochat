@@ -11,6 +11,7 @@ import (
 	"github.com/sergioferg/gochat/internal/database"
 	"github.com/sergioferg/gochat/internal/mailer"
 	"github.com/sergioferg/gochat/internal/respond"
+	"github.com/sergioferg/gochat/internal/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -40,6 +41,11 @@ func (api *API) HandlerUserCreate(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&params)
 	if err != nil {
 		respond.WithError(w, http.StatusBadRequest, "Couldn't decode parameters", err)
+		return
+	}
+
+	if valid, err := utils.IsValidAndTrustworthyEmail(params.Email); !valid || err != nil {
+		respond.WithError(w, http.StatusBadRequest, "Invalid email address or unsupported email provider.", err)
 		return
 	}
 

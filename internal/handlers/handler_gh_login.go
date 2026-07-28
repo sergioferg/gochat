@@ -14,6 +14,7 @@ import (
 	"github.com/sergioferg/gochat/internal/auth"
 	"github.com/sergioferg/gochat/internal/database"
 	"github.com/sergioferg/gochat/internal/respond"
+	"github.com/sergioferg/gochat/internal/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -107,6 +108,11 @@ func (api *API) HandlerGitHubCallback(w http.ResponseWriter, r *http.Request) {
 			respond.WithError(w, http.StatusBadRequest, "No verified primary email found on GitHub", nil)
 			return
 		}
+	}
+
+	if valid, err := utils.IsValidAndTrustworthyEmail(githubUser.Email); !valid || err != nil {
+		respond.WithError(w, http.StatusBadRequest, "Invalid email address or unsupported email provider.", err)
+		return
 	}
 
 	providerUserID := strconv.FormatInt(githubUser.ID, 10)

@@ -3,9 +3,13 @@ import { loginUser, registerUser } from "../api";
 
 export default function Auth({ onLoginSuccess, initialMode = "login" }) {
   const [mode, setMode] = useState(initialMode); // 'login' | 'register'
+  const [regStep, setRegStep] = useState(1); // 1: Email only, 2: Full form
+  const [emailTouched, setEmailTouched] = useState(false);
 
   useEffect(() => {
     setMode(initialMode);
+    setRegStep(1);
+    setEmailTouched(false);
   }, [initialMode]);
   
   // Login state
@@ -23,6 +27,10 @@ export default function Auth({ onLoginSuccess, initialMode = "login" }) {
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail.trim());
+  const showEmailError = emailTouched && regEmail.length > 0 && !isEmailValid;
+  const showEmailCheck = regEmail.length > 0 && isEmailValid;
+
   const clearMessages = () => {
     setError("");
     setSuccessMsg("");
@@ -30,6 +38,8 @@ export default function Auth({ onLoginSuccess, initialMode = "login" }) {
 
   const handleModeSwitch = (newMode) => {
     clearMessages();
+    setRegStep(1);
+    setEmailTouched(false);
     setMode(newMode);
   };
 
@@ -80,6 +90,21 @@ export default function Auth({ onLoginSuccess, initialMode = "login" }) {
       setError(err.message || "Failed to register account");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRegisterFormSubmit = (e) => {
+    e.preventDefault();
+    if (regStep === 1) {
+      setEmailTouched(true);
+      if (!isEmailValid) {
+        setError("please input a valid email");
+        return;
+      }
+      clearMessages();
+      setRegStep(2);
+    } else {
+      handleRegister(e);
     }
   };
 
@@ -146,54 +171,70 @@ export default function Auth({ onLoginSuccess, initialMode = "login" }) {
       )}
 
       {mode === "register" && (
-        <form onSubmit={handleRegister} className="auth-form">
+        <form onSubmit={handleRegisterFormSubmit} className="auth-form">
           <h2>Create Account</h2>
           <div className="form-group">
-            <label htmlFor="reg-nickname">Nickname</label>
-            <input
-              id="reg-nickname"
-              type="text"
-              placeholder="e.g. alice"
-              value={regNickname}
-              onChange={(e) => setRegNickname(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="form-group">
             <label htmlFor="reg-email">Email</label>
-            <input
-              id="reg-email"
-              type="email"
-              placeholder="user@example.com"
-              value={regEmail}
-              onChange={(e) => setRegEmail(e.target.value)}
-              required
-            />
+            <div className="input-with-icon">
+              <input
+                id="reg-email"
+                type="email"
+                placeholder="user@example.com"
+                value={regEmail}
+                onChange={(e) => {
+                  setRegEmail(e.target.value);
+                  if (!emailTouched) setEmailTouched(true);
+                }}
+                className={showEmailError ? "input-invalid" : showEmailCheck ? "input-valid" : ""}
+                required
+              />
+              {showEmailCheck && (
+                <span className="input-check-icon" aria-label="Valid email">
+                  ✓
+                </span>
+              )}
+            </div>
+            {showEmailError && (
+              <span className="field-error-text">please input a valid email</span>
+            )}
           </div>
 
-          <div className="form-group">
-            <label htmlFor="reg-password">Password</label>
-            <input
-              id="reg-password"
-              type="password"
-              placeholder="Password"
-              value={regPassword}
-              onChange={(e) => setRegPassword(e.target.value)}
-              required
-            />
-          </div>
+          <div className={`extra-fields-container ${regStep === 2 ? "expanded" : ""}`}>
+            <div className="form-group">
+              <label htmlFor="reg-nickname">Nickname</label>
+              <input
+                id="reg-nickname"
+                type="text"
+                placeholder="e.g. alice"
+                value={regNickname}
+                onChange={(e) => setRegNickname(e.target.value)}
+                required={regStep === 2}
+              />
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="reg-confirm-password">Confirm Password</label>
-            <input
-              id="reg-confirm-password"
-              type="password"
-              placeholder="Confirm password"
-              value={regConfirmPassword}
-              onChange={(e) => setRegConfirmPassword(e.target.value)}
-              required
-            />
+            <div className="form-group">
+              <label htmlFor="reg-password">Password</label>
+              <input
+                id="reg-password"
+                type="password"
+                placeholder="Password"
+                value={regPassword}
+                onChange={(e) => setRegPassword(e.target.value)}
+                required={regStep === 2}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="reg-confirm-password">Confirm Password</label>
+              <input
+                id="reg-confirm-password"
+                type="password"
+                placeholder="Confirm password"
+                value={regConfirmPassword}
+                onChange={(e) => setRegConfirmPassword(e.target.value)}
+                required={regStep === 2}
+              />
+            </div>
           </div>
 
           <button type="submit" disabled={loading} className="btn-primary">

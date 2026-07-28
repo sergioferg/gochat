@@ -199,14 +199,17 @@ function App() {
                         className="modal-content"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <button
-                            type="button"
-                            className="modal-close-btn"
-                            onClick={() => setIsAuthModalOpen(false)}
-                            aria-label="Close modal"
-                        >
-                            ✕
-                        </button>
+                        <div className="modal-header">
+                            <span className="modal-title">GoChat</span>
+                            <button
+                                type="button"
+                                className="modal-close-btn"
+                                onClick={() => setIsAuthModalOpen(false)}
+                                aria-label="Close modal"
+                            >
+                                ✕
+                            </button>
+                        </div>
                         {currentUser ? (
                             <UserProfile
                                 user={currentUser}
