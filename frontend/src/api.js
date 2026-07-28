@@ -11,8 +11,14 @@ export const WS_BASE =
     : "ws://localhost:8080");
 
 export function getWebSocketUrl(path = "/ws") {
+  const token = getToken();
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  return `${WS_BASE}${cleanPath}`;
+  const url = `${WS_BASE}${cleanPath}`;
+  if (token && !url.includes("token=")) {
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}token=${encodeURIComponent(token)}`;
+  }
+  return url;
 }
 
 let accessToken = localStorage.getItem("token") || "";
