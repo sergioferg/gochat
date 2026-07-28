@@ -76,10 +76,16 @@ export async function loginUser(email, password) {
   return data;
 }
 
-export async function registerUser(nickname, email, password) {
+export async function registerUser(nickname, email, password, realName, dateOfBirth) {
   return await request("/users", {
     method: "POST",
-    body: JSON.stringify({ nickname, email, password }),
+    body: JSON.stringify({
+      nickname,
+      email,
+      password,
+      real_name: realName,
+      date_of_birth: dateOfBirth,
+    }),
   });
 }
 

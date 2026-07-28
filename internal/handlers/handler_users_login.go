@@ -111,12 +111,14 @@ func (api *API) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 
 	respond.WithJSON(w, http.StatusOK, response{
 		User: User{
-			ID:        user.ID,
-			Nickname:  user.Nickname,
-			Status:    user.Status,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
-			Email:     user.Email,
+			ID:          user.ID,
+			Nickname:    user.Nickname,
+			RealName:    user.RealName,
+			DateOfBirth: formatDateOfBirth(user.BirthDate),
+			Status:      user.Status,
+			CreatedAt:   user.CreatedAt,
+			UpdatedAt:   user.UpdatedAt,
+			Email:       user.Email,
 		},
 		Token: accessToken,
 	})

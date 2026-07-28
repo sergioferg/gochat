@@ -1122,11 +1122,11 @@ func TestHandlerUserCreate(t *testing.T) {
 	}{
 		{
 			name: "201 Created - user created successfully",
-			body: `{"nickname":"alice","email":"alice@example.com","password":"Password123!"}`,
+			body: `{"nickname":"alice","real_name":"Alice Smith","date_of_birth":"1995-05-15","email":"alice@example.com","password":"Password123!"}`,
 			mockSetup: func(m *MockDBTX) {
 				m.QueryRowFunc = func(ctx context.Context, query string, args ...any) pgx.Row {
 					if strings.Contains(query, "INSERT INTO users") {
-						return newMockRow(userID, "alice", "alice@example.com", hashedPwPtr, "unverified", now, now, pgtype.Timestamptz{Valid: false})
+						return newMockRow(userID, "alice", "Alice Smith", now, "alice@example.com", hashedPwPtr, "unverified", now, now, pgtype.Timestamptz{Valid: false})
 					}
 					if strings.Contains(query, "INSERT INTO email_verification_tokens") {
 						return newMockRow("hashedtoken", userID, now, now.Add(24*time.Hour))
@@ -1141,6 +1141,8 @@ func TestHandlerUserCreate(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, userID, res.ID)
 				assert.Equal(t, "alice", res.Nickname)
+				assert.Equal(t, "Alice Smith", res.RealName)
+				assert.Equal(t, "1995-05-15", res.DateOfBirth)
 				assert.Equal(t, "alice@example.com", res.Email)
 				assert.Equal(t, "unverified", res.Status)
 			},
@@ -1156,7 +1158,7 @@ func TestHandlerUserCreate(t *testing.T) {
 		},
 		{
 			name: "409 Conflict - user email already exists",
-			body: `{"nickname":"alice","email":"alice@example.com","password":"Password123!"}`,
+			body: `{"nickname":"alice","real_name":"Alice Smith","date_of_birth":"1995-05-15","email":"alice@example.com","password":"Password123!"}`,
 			mockSetup: func(m *MockDBTX) {
 				m.QueryRowFunc = func(ctx context.Context, query string, args ...any) pgx.Row {
 					return &mockRow{
@@ -1168,7 +1170,7 @@ func TestHandlerUserCreate(t *testing.T) {
 			},
 			wantStatus: http.StatusConflict,
 			checkResponse: func(t *testing.T, body string) {
-				assert.Contains(t, body, "A user with this email already exists")
+				assert.Contains(t, body, "A user with this email or nickname already exists")
 			},
 		},
 	}
@@ -1203,6 +1205,8 @@ func TestHandlerUserCreate(t *testing.T) {
 		})
 	}
 }
+
+
 
 // TestHandlerUserLogin tests POST /api/login
 func TestHandlerUserLogin(t *testing.T) {
@@ -1598,7 +1602,7 @@ func TestHandlerUserUpdate(t *testing.T) {
 			authUserID:     userID,
 			mockSetup: func(m *MockDBTX) {
 				m.QueryRowFunc = func(ctx context.Context, query string, args ...any) pgx.Row {
-					return newMockRow(userID, "alice_new", "alice@example.com", hashedPwPtr, "active", now, now, pgtype.Timestamptz{Valid: false})
+					return newMockRow(userID, "alice_new", "Alice Smith", now, "alice@example.com", hashedPwPtr, "active", now, now, pgtype.Timestamptz{Valid: false})
 				}
 			},
 			wantStatus: http.StatusOK,
@@ -1646,7 +1650,7 @@ func TestHandlerUserUpdate(t *testing.T) {
 			},
 			wantStatus: http.StatusConflict,
 			checkResponse: func(t *testing.T, body string) {
-				assert.Contains(t, body, "A user with this email already exists")
+				assert.Contains(t, body, "A user with this email or nickname already exists")
 			},
 		},
 	}

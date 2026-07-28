@@ -82,9 +82,11 @@ func TestUserRegistration(t *testing.T) {
 
 	t.Run("successful registration", func(t *testing.T) {
 		reqBody, err := json.Marshal(map[string]string{
-			"email":    "alice@example.com",
-			"nickname": "alice",
-			"password": "Password123!",
+			"email":         "alice@example.com",
+			"nickname":      "alice",
+			"real_name":     "Alice Smith",
+			"date_of_birth": "1995-05-15",
+			"password":      "Password123!",
 		})
 		require.NoError(t, err)
 
@@ -111,9 +113,11 @@ func TestUserRegistration(t *testing.T) {
 
 	t.Run("conflict duplicate email", func(t *testing.T) {
 		reqBody, err := json.Marshal(map[string]string{
-			"email":    "alice@example.com",
-			"nickname": "alice2",
-			"password": "Password123!",
+			"email":         "alice@example.com",
+			"nickname":      "alice2",
+			"real_name":     "Alice Smith",
+			"date_of_birth": "1995-05-15",
+			"password":      "Password123!",
 		})
 		require.NoError(t, err)
 
@@ -144,9 +148,11 @@ func TestUserVerification(t *testing.T) {
 
 	// Register user
 	reqBody, _ := json.Marshal(map[string]string{
-		"email":    "bob@example.com",
-		"nickname": "bob",
-		"password": "Password123!",
+		"email":         "bob@example.com",
+		"nickname":      "bob",
+		"real_name":     "Bob Jones",
+		"date_of_birth": "1992-08-20",
+		"password":      "Password123!",
 	})
 	resp, err := http.Post(server.URL+"/api/users", "application/json", bytes.NewBuffer(reqBody))
 	require.NoError(t, err)
@@ -210,9 +216,11 @@ func TestUserLogin(t *testing.T) {
 
 	// Register user
 	reqBody, _ := json.Marshal(map[string]string{
-		"email":    "charlie@example.com",
-		"nickname": "charlie",
-		"password": "Password123!",
+		"email":         "charlie@example.com",
+		"nickname":      "charlie",
+		"real_name":     "Charlie Brown",
+		"date_of_birth": "1990-01-10",
+		"password":      "Password123!",
 	})
 	resp, err := http.Post(server.URL+"/api/users", "application/json", bytes.NewBuffer(reqBody))
 	require.NoError(t, err)
@@ -300,9 +308,11 @@ func TestRefreshAndRevokeToken(t *testing.T) {
 
 	// Register & verify user
 	reqBody, _ := json.Marshal(map[string]string{
-		"email":    "dave@example.com",
-		"nickname": "dave",
-		"password": "Password123!",
+		"email":         "dave@example.com",
+		"nickname":      "dave",
+		"real_name":     "Dave Miller",
+		"date_of_birth": "1988-12-05",
+		"password":      "Password123!",
 	})
 	resp, err := http.Post(server.URL+"/api/users", "application/json", bytes.NewBuffer(reqBody))
 	require.NoError(t, err)
@@ -417,9 +427,11 @@ func TestDeleteUser(t *testing.T) {
 
 	// Register & verify user
 	reqBody, _ := json.Marshal(map[string]string{
-		"email":    "eve@example.com",
-		"nickname": "eve",
-		"password": "Password123!",
+		"email":         "eve@example.com",
+		"nickname":      "eve",
+		"real_name":     "Eve Davis",
+		"date_of_birth": "1996-03-30",
+		"password":      "Password123!",
 	})
 	resp, err := http.Post(server.URL+"/api/users", "application/json", bytes.NewBuffer(reqBody))
 	require.NoError(t, err)

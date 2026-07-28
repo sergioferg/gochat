@@ -64,10 +64,22 @@ type Session struct {
 type User struct {
 	ID             uuid.UUID
 	Nickname       string
+	RealName       string
+	BirthDate      time.Time
 	Email          string
 	HashedPassword *string
 	Status         string
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	DeletedAt      pgtype.Timestamptz
+}
+
+type UserRelationship struct {
+	ID             uuid.UUID
+	ActionUserID   uuid.UUID
+	TargetUserID   uuid.UUID
+	Status         string
+	InitialMessage *string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }

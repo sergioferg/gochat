@@ -1,7 +1,9 @@
 -- +goose Up
 CREATE TABLE users(
     id UUID PRIMARY KEY,
-    nickname TEXT NOT NULL,
+    nickname TEXT NOT NULL UNIQUE,
+    real_name TEXT NOT NULL,
+    birth_date DATE NOT NULL,
     email TEXT NOT NULL UNIQUE,
     hashed_password TEXT,
     status TEXT NOT NULL DEFAULT 'unverified',

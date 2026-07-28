@@ -1,6 +1,19 @@
 import { useState, useEffect } from "react";
 import { loginUser, registerUser } from "../api";
 
+function calculateAge(dobString) {
+  if (!dobString) return 0;
+  const birthDate = new Date(dobString);
+  if (isNaN(birthDate.getTime())) return 0;
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+}
+
 export default function Auth({ onLoginSuccess, initialMode = "login" }) {
   const [mode, setMode] = useState(initialMode); // 'login' | 'register'
   const [regStep, setRegStep] = useState(1); // 1: Email only, 2: Full form
@@ -18,6 +31,8 @@ export default function Auth({ onLoginSuccess, initialMode = "login" }) {
 
   // Register state
   const [regNickname, setRegNickname] = useState("");
+  const [regRealName, setRegRealName] = useState("");
+  const [regDateOfBirth, setRegDateOfBirth] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
@@ -70,8 +85,13 @@ export default function Auth({ onLoginSuccess, initialMode = "login" }) {
     e.preventDefault();
     clearMessages();
 
-    if (!regNickname || !regEmail || !regPassword) {
+    if (!regNickname || !regRealName || !regDateOfBirth || !regEmail || !regPassword) {
       setError("Please fill in all required fields.");
+      return;
+    }
+
+    if (calculateAge(regDateOfBirth) < 18) {
+      setError("You must be at least 18 years old to register.");
       return;
     }
 
@@ -82,12 +102,27 @@ export default function Auth({ onLoginSuccess, initialMode = "login" }) {
 
     setLoading(true);
     try {
-      const res = await registerUser(regNickname, regEmail, regPassword);
+      const res = await registerUser(
+        regNickname,
+        regEmail,
+        regPassword,
+        regRealName,
+        regDateOfBirth
+      );
       setSuccessMsg(
         `Account created successfully for ${res?.nickname || regNickname}. Please check your email to complete verification.`
       );
     } catch (err) {
-      setError(err.message || "Failed to register account");
+      const errMsg = err?.message || "";
+      if (
+        errMsg.toLowerCase().includes("conflict") ||
+        errMsg.toLowerCase().includes("already exists") ||
+        errMsg.toLowerCase().includes("taken")
+      ) {
+        setError("The nickname or email is already taken. Please choose another.");
+      } else {
+        setError(errMsg || "Failed to register account");
+      }
     } finally {
       setLoading(false);
     }
@@ -201,6 +236,18 @@ export default function Auth({ onLoginSuccess, initialMode = "login" }) {
 
           <div className={`extra-fields-container ${regStep === 2 ? "expanded" : ""}`}>
             <div className="form-group">
+              <label htmlFor="reg-real-name">Real Name</label>
+              <input
+                id="reg-real-name"
+                type="text"
+                placeholder="e.g. John Doe"
+                value={regRealName}
+                onChange={(e) => setRegRealName(e.target.value)}
+                required={regStep === 2}
+              />
+            </div>
+
+            <div className="form-group">
               <label htmlFor="reg-nickname">Nickname</label>
               <input
                 id="reg-nickname"
@@ -208,6 +255,17 @@ export default function Auth({ onLoginSuccess, initialMode = "login" }) {
                 placeholder="e.g. alice"
                 value={regNickname}
                 onChange={(e) => setRegNickname(e.target.value)}
+                required={regStep === 2}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="reg-dob">Date of Birth</label>
+              <input
+                id="reg-dob"
+                type="date"
+                value={regDateOfBirth}
+                onChange={(e) => setRegDateOfBirth(e.target.value)}
                 required={regStep === 2}
               />
             </div>

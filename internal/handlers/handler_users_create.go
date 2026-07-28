@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,20 +17,42 @@ import (
 )
 
 type User struct {
-	ID        uuid.UUID `json:"id"`
-	Nickname  string    `json:"nickname"`
-	Status    string    `json:"status"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
-	Password  string    `json:"-"`
+	ID          uuid.UUID `json:"id"`
+	Nickname    string    `json:"nickname"`
+	RealName    string    `json:"real_name"`
+	DateOfBirth string    `json:"date_of_birth"`
+	Status      string    `json:"status"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+	Email       string    `json:"email"`
+	Password    string    `json:"-"`
+}
+
+func parseDateOfBirth(s string) (time.Time, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return time.Time{}, fmt.Errorf("date_of_birth is required")
+	}
+	if t, err := time.Parse("2006-01-02", s); err == nil {
+		return t, nil
+	}
+	return time.Parse(time.RFC3339, s)
+}
+
+func formatDateOfBirth(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.Format("2006-01-02")
 }
 
 func (api *API) HandlerUserCreate(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Nickname string `json:"nickname"`
-		Password string `json:"password"`
-		Email    string `json:"email"`
+		Nickname    string `json:"nickname"`
+		RealName    string `json:"real_name"`
+		DateOfBirth string `json:"date_of_birth"`
+		Password    string `json:"password"`
+		Email       string `json:"email"`
 	}
 	type response struct {
 		User
@@ -41,6 +64,17 @@ func (api *API) HandlerUserCreate(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&params)
 	if err != nil {
 		respond.WithError(w, http.StatusBadRequest, "Couldn't decode parameters", err)
+		return
+	}
+
+	if strings.TrimSpace(params.RealName) == "" {
+		respond.WithError(w, http.StatusBadRequest, "real_name is required", nil)
+		return
+	}
+
+	dob, err := parseDateOfBirth(params.DateOfBirth)
+	if err != nil {
+		respond.WithError(w, http.StatusBadRequest, "Invalid or missing date_of_birth format. Use YYYY-MM-DD", err)
 		return
 	}
 
@@ -59,12 +93,14 @@ func (api *API) HandlerUserCreate(w http.ResponseWriter, r *http.Request) {
 		ID:             uuid.Must(uuid.NewV7()),
 		Email:          params.Email,
 		Nickname:       params.Nickname,
+		RealName:       params.RealName,
+		BirthDate:      dob,
 		HashedPassword: &hashedPassword,
 	})
 	if err != nil {
 		if database.IsPgErrorCode(err, "23505") {
-			logrus.Warn("Conflict creating user - email exists:", err)
-			respond.WithError(w, http.StatusConflict, "A user with this email already exists", err)
+			logrus.Warn("Conflict creating user - email or nickname exists:", err)
+			respond.WithError(w, http.StatusConflict, "A user with this email or nickname already exists", err)
 			return
 		}
 		logrus.Warn("Error creating user:", err)
@@ -97,12 +133,14 @@ func (api *API) HandlerUserCreate(w http.ResponseWriter, r *http.Request) {
 
 	respond.WithJSON(w, http.StatusCreated, response{
 		User: User{
-			ID:        user.ID,
-			Nickname:  user.Nickname,
-			Status:    user.Status,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
-			Email:     user.Email,
+			ID:          user.ID,
+			Nickname:    user.Nickname,
+			RealName:    user.RealName,
+			DateOfBirth: formatDateOfBirth(user.BirthDate),
+			Status:      user.Status,
+			CreatedAt:   user.CreatedAt,
+			UpdatedAt:   user.UpdatedAt,
+			Email:       user.Email,
 		},
 	})
 }

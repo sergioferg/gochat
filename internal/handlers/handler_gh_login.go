@@ -133,6 +133,8 @@ func (api *API) HandlerGitHubCallback(w http.ResponseWriter, r *http.Request) {
 						ID:             uuid.Must(uuid.NewV7()),
 						Email:          githubUser.Email,
 						Nickname:       githubUser.Login,
+						RealName:       githubUser.Login,
+						BirthDate:      time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
 						HashedPassword: nil,
 						Status:         "active",
 					})

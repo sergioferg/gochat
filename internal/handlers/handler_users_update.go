@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sergioferg/gochat/internal/auth"
@@ -19,9 +20,11 @@ func (api *API) HandlerUserUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type parameters struct {
-		NewNickname *string `json:"nickname,omitempty"`
-		NewPassword *string `json:"password,omitempty"`
-		NewEmail    *string `json:"email,omitempty"`
+		NewNickname    *string `json:"nickname,omitempty"`
+		NewRealName    *string `json:"real_name,omitempty"`
+		NewDateOfBirth *string `json:"date_of_birth,omitempty"`
+		NewPassword    *string `json:"password,omitempty"`
+		NewEmail       *string `json:"email,omitempty"`
 	}
 
 	type response struct {
@@ -37,7 +40,7 @@ func (api *API) HandlerUserUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if params.NewNickname == nil && params.NewEmail == nil && params.NewPassword == nil {
+	if params.NewNickname == nil && params.NewRealName == nil && params.NewDateOfBirth == nil && params.NewEmail == nil && params.NewPassword == nil {
 		respond.WithError(w, http.StatusBadRequest, "No fields provided to update", nil)
 		return
 	}
@@ -52,9 +55,21 @@ func (api *API) HandlerUserUpdate(w http.ResponseWriter, r *http.Request) {
 		hashedPassword = &hash
 	}
 
+	var birthDate *time.Time
+	if params.NewDateOfBirth != nil {
+		parsedDob, err := parseDateOfBirth(*params.NewDateOfBirth)
+		if err != nil {
+			respond.WithError(w, http.StatusBadRequest, "Invalid date_of_birth format. Use YYYY-MM-DD", err)
+			return
+		}
+		birthDate = &parsedDob
+	}
+
 	arg := database.UpdateUserParams{
 		ID:             userID,
 		Nickname:       params.NewNickname,
+		RealName:       params.NewRealName,
+		BirthDate:      birthDate,
 		Email:          params.NewEmail,
 		HashedPassword: hashedPassword,
 	}
@@ -62,8 +77,8 @@ func (api *API) HandlerUserUpdate(w http.ResponseWriter, r *http.Request) {
 	user, err := api.DB.UpdateUser(r.Context(), arg)
 	if err != nil {
 		if database.IsPgErrorCode(err, "23505") {
-			logrus.Warn("Conflict updating user - email exists:", err)
-			respond.WithError(w, http.StatusConflict, "A user with this email already exists", err)
+			logrus.Warn("Conflict updating user - email or nickname exists:", err)
+			respond.WithError(w, http.StatusConflict, "A user with this email or nickname already exists", err)
 			return
 		}
 		respond.WithError(w, http.StatusInternalServerError, "Something went wrong", err)
@@ -72,12 +87,14 @@ func (api *API) HandlerUserUpdate(w http.ResponseWriter, r *http.Request) {
 
 	respond.WithJSON(w, http.StatusOK, response{
 		User: User{
-			ID:        user.ID,
-			Nickname:  user.Nickname,
-			Status:    user.Status,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
-			Email:     user.Email,
+			ID:          user.ID,
+			Nickname:    user.Nickname,
+			RealName:    user.RealName,
+			DateOfBirth: formatDateOfBirth(user.BirthDate),
+			Status:      user.Status,
+			CreatedAt:   user.CreatedAt,
+			UpdatedAt:   user.UpdatedAt,
+			Email:       user.Email,
 		},
 	})
 }

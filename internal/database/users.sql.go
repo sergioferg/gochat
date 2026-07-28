@@ -18,7 +18,8 @@ UPDATE users
 SET
     email = CONCAT('deleted_', id, '@deleted.local'),
     hashed_password = NULL,
-    nickname = 'Deleted User',
+    nickname = CONCAT('deleted_', id),
+    real_name = 'Deleted User',
     status = 'deleted',
     deleted_at = CURRENT_TIMESTAMP,
     updated_at = CURRENT_TIMESTAMP
@@ -31,20 +32,31 @@ func (q *Queries) AnonymizeUser(ctx context.Context, id uuid.UUID) error {
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users(id, nickname,  email, hashed_password, status)
-VALUES (
+INSERT INTO users(
+    id,
+    nickname,
+    real_name,
+    birth_date,
+    email,
+    hashed_password,
+    status
+) VALUES (
     $1,
     $2,
     $3,
     $4,
-    COALESCE($5, 'unverified')
+    $5,
+    $6,
+    COALESCE($7, 'unverified')
 )
-RETURNING id, nickname, email, hashed_password, status, created_at, updated_at, deleted_at
+RETURNING id, nickname, real_name, birth_date, email, hashed_password, status, created_at, updated_at, deleted_at
 `
 
 type CreateUserParams struct {
 	ID             uuid.UUID
 	Nickname       string
+	RealName       string
+	BirthDate      time.Time
 	Email          string
 	HashedPassword *string
 	Status         interface{}
@@ -54,6 +66,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	row := q.db.QueryRow(ctx, createUser,
 		arg.ID,
 		arg.Nickname,
+		arg.RealName,
+		arg.BirthDate,
 		arg.Email,
 		arg.HashedPassword,
 		arg.Status,
@@ -62,6 +76,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	err := row.Scan(
 		&i.ID,
 		&i.Nickname,
+		&i.RealName,
+		&i.BirthDate,
 		&i.Email,
 		&i.HashedPassword,
 		&i.Status,
@@ -74,7 +90,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 
 const getUserByEmail = `-- name: GetUserByEmail :one
 
-SELECT id, nickname, email, hashed_password, status, created_at, updated_at, deleted_at FROM users
+SELECT id, nickname, real_name, birth_date, email, hashed_password, status, created_at, updated_at, deleted_at FROM users
 WHERE email = $1
 `
 
@@ -84,6 +100,8 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 	err := row.Scan(
 		&i.ID,
 		&i.Nickname,
+		&i.RealName,
+		&i.BirthDate,
 		&i.Email,
 		&i.HashedPassword,
 		&i.Status,
@@ -100,6 +118,8 @@ SELECT
     u.id,
     u.email,
     u.nickname,
+    u.real_name,
+    u.birth_date,
     u.created_at,
     u.updated_at,
     oa.provider,
@@ -113,6 +133,8 @@ type GetUserByIDRow struct {
 	ID             uuid.UUID
 	Email          string
 	Nickname       string
+	RealName       string
+	BirthDate      time.Time
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	Provider       string
@@ -132,6 +154,8 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) ([]GetUserByIDR
 			&i.ID,
 			&i.Email,
 			&i.Nickname,
+			&i.RealName,
+			&i.BirthDate,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Provider,
@@ -153,15 +177,19 @@ UPDATE users
 SET
     email = COALESCE($1, email),
     nickname = COALESCE($2, nickname),
-    hashed_password = COALESCE($3, hashed_password),
+    real_name = COALESCE($3, real_name),
+    birth_date = COALESCE($4, birth_date),
+    hashed_password = COALESCE($5, hashed_password),
     updated_at = NOW() AT TIME ZONE 'UTC'
-WHERE id = $4 AND status = 'active'
-RETURNING id, nickname, email, hashed_password, status, created_at, updated_at, deleted_at
+WHERE id = $6 AND status = 'active'
+RETURNING id, nickname, real_name, birth_date, email, hashed_password, status, created_at, updated_at, deleted_at
 `
 
 type UpdateUserParams struct {
 	Email          *string
 	Nickname       *string
+	RealName       *string
+	BirthDate      *time.Time
 	HashedPassword *string
 	ID             uuid.UUID
 }
@@ -170,6 +198,8 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 	row := q.db.QueryRow(ctx, updateUser,
 		arg.Email,
 		arg.Nickname,
+		arg.RealName,
+		arg.BirthDate,
 		arg.HashedPassword,
 		arg.ID,
 	)
@@ -177,6 +207,8 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 	err := row.Scan(
 		&i.ID,
 		&i.Nickname,
+		&i.RealName,
+		&i.BirthDate,
 		&i.Email,
 		&i.HashedPassword,
 		&i.Status,

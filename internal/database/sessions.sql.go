@@ -82,7 +82,7 @@ func (q *Queries) DeleteUserSessions(ctx context.Context, userID uuid.UUID) erro
 
 const getUserFromSession = `-- name: GetUserFromSession :one
 
-SELECT u.id, u.nickname, u.email, u.hashed_password, u.status, u.created_at, u.updated_at, u.deleted_at
+SELECT u.id, u.nickname, u.real_name, u.birth_date, u.email, u.hashed_password, u.status, u.created_at, u.updated_at, u.deleted_at
 FROM sessions s
 JOIN users u ON(s.user_id = u.id)
 WHERE s.token_hash = $1 AND revoked_at IS NULL AND expires_at > (NOW() AT TIME ZONE 'UTC')
@@ -94,6 +94,8 @@ func (q *Queries) GetUserFromSession(ctx context.Context, tokenHash string) (Use
 	err := row.Scan(
 		&i.ID,
 		&i.Nickname,
+		&i.RealName,
+		&i.BirthDate,
 		&i.Email,
 		&i.HashedPassword,
 		&i.Status,

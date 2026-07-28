@@ -1,10 +1,19 @@
 -- name: CreateUser :one
-INSERT INTO users(id, nickname,  email, hashed_password, status)
-VALUES (
+INSERT INTO users(
+    id,
+    nickname,
+    real_name,
+    birth_date,
+    email,
+    hashed_password,
+    status
+) VALUES (
     $1,
     $2,
     $3,
     $4,
+    $5,
+    $6,
     COALESCE(sqlc.narg('status'), 'unverified')
 )
 RETURNING *;
@@ -20,6 +29,8 @@ SELECT
     u.id,
     u.email,
     u.nickname,
+    u.real_name,
+    u.birth_date,
     u.created_at,
     u.updated_at,
     oa.provider,
@@ -34,6 +45,8 @@ UPDATE users
 SET
     email = COALESCE(sqlc.narg('email'), email),
     nickname = COALESCE(sqlc.narg('nickname'), nickname),
+    real_name = COALESCE(sqlc.narg('real_name'), real_name),
+    birth_date = COALESCE(sqlc.narg('birth_date'), birth_date),
     hashed_password = COALESCE(sqlc.narg('hashed_password'), hashed_password),
     updated_at = NOW() AT TIME ZONE 'UTC'
 WHERE id = sqlc.arg('id') AND status = 'active'
@@ -52,7 +65,8 @@ UPDATE users
 SET
     email = CONCAT('deleted_', id, '@deleted.local'),
     hashed_password = NULL,
-    nickname = 'Deleted User',
+    nickname = CONCAT('deleted_', id),
+    real_name = 'Deleted User',
     status = 'deleted',
     deleted_at = CURRENT_TIMESTAMP,
     updated_at = CURRENT_TIMESTAMP

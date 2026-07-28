@@ -87,6 +87,12 @@ export default function UserProfile({ user, onLogout }) {
           <strong>Nickname:</strong> {user.nickname || "N/A"}
         </div>
         <div className="profile-item">
+          <strong>Real Name:</strong> {user.real_name || "N/A"}
+        </div>
+        <div className="profile-item">
+          <strong>Date of Birth:</strong> {user.date_of_birth || "N/A"}
+        </div>
+        <div className="profile-item">
           <strong>Email:</strong> {user.email || "N/A"}
         </div>
         <div className="profile-item">

@@ -53,7 +53,7 @@ func (q *Queries) DeleteVerificationTokensByUserID(ctx context.Context, userID u
 
 const getUserFromVerificationToken = `-- name: GetUserFromVerificationToken :one
 
-SELECT u.id, u.nickname, u.email, u.hashed_password, u.status, u.created_at, u.updated_at, u.deleted_at
+SELECT u.id, u.nickname, u.real_name, u.birth_date, u.email, u.hashed_password, u.status, u.created_at, u.updated_at, u.deleted_at
 FROM email_verification_tokens evt
 JOIN users u ON evt.user_id = u.id
 WHERE evt.token_hash = $1
@@ -66,6 +66,8 @@ func (q *Queries) GetUserFromVerificationToken(ctx context.Context, tokenHash st
 	err := row.Scan(
 		&i.ID,
 		&i.Nickname,
+		&i.RealName,
+		&i.BirthDate,
 		&i.Email,
 		&i.HashedPassword,
 		&i.Status,

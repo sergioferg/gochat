@@ -39,11 +39,13 @@ func (api *API) HandlerGetMe(w http.ResponseWriter, r *http.Request) {
 
 	profile := UserProfile{
 		User: User{
-			ID:        dbUsers[0].ID,
-			Email:     dbUsers[0].Email,
-			Nickname:  dbUsers[0].Nickname,
-			CreatedAt: dbUsers[0].CreatedAt,
-			UpdatedAt: dbUsers[0].UpdatedAt,
+			ID:          dbUsers[0].ID,
+			Email:       dbUsers[0].Email,
+			Nickname:    dbUsers[0].Nickname,
+			RealName:    dbUsers[0].RealName,
+			DateOfBirth: formatDateOfBirth(dbUsers[0].BirthDate),
+			CreatedAt:   dbUsers[0].CreatedAt,
+			UpdatedAt:   dbUsers[0].UpdatedAt,
 		},
 		OAuthAccounts: []OAuthAccount{},
 	}
