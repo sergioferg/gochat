@@ -1,3 +1,4 @@
+-- +goose Up
 CREATE TABLE user_relationships(
     id UUID PRIMARY KEY,
     action_user_id UUID NOT NULL,
@@ -29,3 +30,6 @@ ON user_relationships (
     LEAST(action_user_id, target_user_id),
     GREATEST(action_user_id, target_user_id)
 );
+
+-- +goose Down
+DROP TABLE IF EXISTS user_relationships;

@@ -72,6 +72,7 @@ func (api *API) HandlerGitHubCallback(w http.ResponseWriter, r *http.Request) {
 	var githubUser struct {
 		Login string `json:"login"`
 		Email string `json:"email"`
+		Name  string `json:"name"`
 		ID    int64  `json:"id"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&githubUser); err != nil {
@@ -133,7 +134,7 @@ func (api *API) HandlerGitHubCallback(w http.ResponseWriter, r *http.Request) {
 						ID:             uuid.Must(uuid.NewV7()),
 						Email:          githubUser.Email,
 						Nickname:       githubUser.Login,
-						RealName:       githubUser.Login,
+						RealName:       githubUser.Name,
 						BirthDate:      time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC),
 						HashedPassword: nil,
 						Status:         "active",
