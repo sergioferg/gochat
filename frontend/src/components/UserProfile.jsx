@@ -95,11 +95,6 @@ export default function UserProfile({ user, onLogout }) {
             {user.status || "active"}
           </span>
         </div>
-        {user.id && (
-          <div className="profile-item">
-            <strong>ID:</strong> <code className="user-id">{user.id}</code>
-          </div>
-        )}
       </div>
 
       {/* Active Sessions Section */}
@@ -145,9 +140,6 @@ export default function UserProfile({ user, onLogout }) {
                     <span>
                       Created: {sess.created_at ? new Date(sess.created_at).toLocaleString() : "Unknown"}
                     </span>
-                  </div>
-                  <div className="session-id-text">
-                    ID: <code>{sess.id}</code>
                   </div>
                 </div>
 

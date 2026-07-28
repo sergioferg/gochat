@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -81,6 +82,10 @@ func (api *API) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 
 	if strings.Contains(ipAddress, ",") {
 		ipAddress = strings.Split(ipAddress, ",")[0]
+	}
+	ipAddress = strings.TrimSpace(ipAddress)
+	if host, _, err := net.SplitHostPort(ipAddress); err == nil {
+		ipAddress = host
 	}
 	_, err = api.DB.CreateSession(r.Context(), database.CreateSessionParams{
 		ID:        uuid.Must(uuid.NewV7()),
