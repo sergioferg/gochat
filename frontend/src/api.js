@@ -117,3 +117,16 @@ export async function sendMessage(text) {
   });
 }
 
+export async function fetchActiveSessions() {
+  const data = await request("/sessions", {
+    method: "GET",
+  });
+  return data?.sessions || [];
+}
+
+export async function revokeSession(sessionId) {
+  return await request(`/sessions/${sessionId}`, {
+    method: "DELETE",
+  });
+}
+
