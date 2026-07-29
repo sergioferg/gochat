@@ -43,6 +43,10 @@ func (api *API) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 		respond.WithError(w, http.StatusUnauthorized, "Account not verified", nil)
 		return
 	}
+	if user.Status == "deactivated" || user.Status == "deleted" {
+		respond.WithError(w, http.StatusForbidden, "Account is "+user.Status, nil)
+		return
+	}
 	if user.HashedPassword == nil {
 		respond.WithError(w, http.StatusForbidden, "This email is connected via a social provider (like GitHub). Please log in using that method.", nil)
 		return

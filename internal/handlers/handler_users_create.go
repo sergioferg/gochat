@@ -39,8 +39,8 @@ func parseDateOfBirth(s string) (time.Time, error) {
 	return time.Parse(time.RFC3339, s)
 }
 
-func formatDateOfBirth(t time.Time) string {
-	if t.IsZero() {
+func formatDateOfBirth(t *time.Time) string {
+	if t == nil || t.IsZero() {
 		return ""
 	}
 	return t.Format("2006-01-02")
@@ -94,7 +94,7 @@ func (api *API) HandlerUserCreate(w http.ResponseWriter, r *http.Request) {
 		Email:          params.Email,
 		Nickname:       params.Nickname,
 		RealName:       params.RealName,
-		BirthDate:      dob,
+		BirthDate:      &dob,
 		HashedPassword: &hashedPassword,
 	})
 	if err != nil {

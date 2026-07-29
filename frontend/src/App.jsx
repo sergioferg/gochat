@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Routes, Route, NavLink, Link, useLocation } from "react-router-dom";
+import { Routes, Route, NavLink, Link, useLocation, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import ChatPage from "./pages/ChatPage";
 import OAuthCallback from "./pages/OAuthCallback";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
+import CompleteProfile from "./pages/CompleteProfile";
 import Auth from "./components/Auth";
 import UserProfile from "./components/UserProfile";
 import { fetchCurrentUser, logoutUser, getToken } from "./api";
@@ -166,10 +167,31 @@ function App() {
                     }
                 />
                 <Route
+                    path="/complete-profile"
+                    element={
+                        currentUser ? (
+                            currentUser.date_of_birth ? (
+                                <Navigate to="/chat" replace />
+                            ) : (
+                                <CompleteProfile 
+                                    currentUser={currentUser} 
+                                    onComplete={(user) => setCurrentUser(user)} 
+                                />
+                            )
+                        ) : (
+                            <Navigate to="/" replace />
+                        )
+                    }
+                />
+                <Route
                     path="/chat"
                     element={
                         currentUser ? (
-                            <ChatPage currentUser={currentUser} />
+                            currentUser.date_of_birth ? (
+                                <ChatPage currentUser={currentUser} />
+                            ) : (
+                                <Navigate to="/complete-profile" replace />
+                            )
                         ) : (
                             <Home
                                 currentUser={currentUser}

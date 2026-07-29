@@ -70,6 +70,9 @@ export async function loginUser(email, password) {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
+  if (["unverified", "deactivated", "deleted"].includes(data.status)) {
+    throw new Error(`Account is ${data.status}`);
+  }
   if (data.token) {
     setToken(data.token);
   }
@@ -139,6 +142,13 @@ export async function fetchActiveSessions() {
 export async function revokeSession(sessionId) {
   return await request(`/sessions/${sessionId}`, {
     method: "DELETE",
+  });
+}
+
+export async function updateUser(updates) {
+  return await request("/users", {
+    method: "PATCH",
+    body: JSON.stringify(updates),
   });
 }
 

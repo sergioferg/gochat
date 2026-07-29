@@ -56,7 +56,7 @@ type CreateUserParams struct {
 	ID             uuid.UUID
 	Nickname       string
 	RealName       string
-	BirthDate      time.Time
+	BirthDate      *time.Time
 	Email          string
 	HashedPassword *string
 	Status         interface{}
@@ -134,7 +134,7 @@ type GetUserByIDRow struct {
 	Email          string
 	Nickname       string
 	RealName       string
-	BirthDate      time.Time
+	BirthDate      *time.Time
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	Provider       string

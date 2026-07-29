@@ -65,7 +65,7 @@ type User struct {
 	ID             uuid.UUID
 	Nickname       string
 	RealName       string
-	BirthDate      time.Time
+	BirthDate      *time.Time
 	Email          string
 	HashedPassword *string
 	Status         string
