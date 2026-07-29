@@ -34,7 +34,19 @@ export const setToken = (token) => {
 
 export const getToken = () => localStorage.getItem("token") || accessToken || "";
 
-async function request(endpoint, options = {}) {
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+function subscribeTokenRefresh(cb) {
+  refreshSubscribers.push(cb);
+}
+
+function onRefreshed(newToken) {
+  refreshSubscribers.forEach((cb) => cb(newToken));
+  refreshSubscribers = [];
+}
+
+async function request(endpoint, options = {}, isRetry = false) {
   const token = getToken();
   const headers = {
     "Content-Type": "application/json",
@@ -53,6 +65,36 @@ async function request(endpoint, options = {}) {
 
   if (response.status === 204) {
     return null;
+  }
+
+  if (
+    response.status === 401 &&
+    token &&
+    !isRetry &&
+    !["/login", "/refresh", "/users", "/verify"].includes(endpoint)
+  ) {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      try {
+        const refreshData = await refreshToken();
+        isRefreshing = false;
+        if (refreshData && refreshData.token) {
+          onRefreshed(refreshData.token);
+          return await request(endpoint, options, true);
+        }
+      } catch (refreshErr) {
+        isRefreshing = false;
+        refreshSubscribers = [];
+        setToken("");
+        throw refreshErr;
+      }
+    } else {
+      return new Promise((resolve, reject) => {
+        subscribeTokenRefresh(() => {
+          request(endpoint, options, true).then(resolve).catch(reject);
+        });
+      });
+    }
   }
 
   const data = await response.json().catch(() => ({}));

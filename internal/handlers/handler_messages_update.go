@@ -55,7 +55,7 @@ func (api *API) HandlerUpdateMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if userID != msgMeta.SenderID {
-		respond.WithError(w, http.StatusUnauthorized, "You did not send this message", nil)
+		respond.WithError(w, http.StatusForbidden, "You did not send this message", nil)
 		return
 	}
 
