@@ -137,7 +137,7 @@ func (api *API) HandlerGitHubCallback(w http.ResponseWriter, r *http.Request) {
 						RealName:       githubUser.Name,
 						BirthDate:      nil,
 						HashedPassword: nil,
-						Status:         "verified",
+						Status:         "active",
 					})
 					if err != nil {
 						respond.WithError(w, http.StatusInternalServerError, "Something went wrong", err)
