@@ -108,7 +108,7 @@ func (q *Queries) GetUserFromSession(ctx context.Context, tokenHash string) (Use
 
 const getUserSessions = `-- name: GetUserSessions :many
 
-SELECT id, created_at, user_agent, ip_address
+SELECT id, token_hash, created_at, user_agent, ip_address
 FROM sessions
 WHERE user_id = $1
     AND expires_at > NOW()
@@ -118,6 +118,7 @@ ORDER BY created_at DESC
 
 type GetUserSessionsRow struct {
 	ID        uuid.UUID
+	TokenHash string
 	CreatedAt time.Time
 	UserAgent string
 	IpAddress string
@@ -134,6 +135,7 @@ func (q *Queries) GetUserSessions(ctx context.Context, userID uuid.UUID) ([]GetU
 		var i GetUserSessionsRow
 		if err := rows.Scan(
 			&i.ID,
+			&i.TokenHash,
 			&i.CreatedAt,
 			&i.UserAgent,
 			&i.IpAddress,

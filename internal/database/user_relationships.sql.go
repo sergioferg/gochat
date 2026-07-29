@@ -136,6 +136,27 @@ func (q *Queries) GetRelationshipBetweenUsers(ctx context.Context, arg GetRelati
 	return i, err
 }
 
+const getRelationshipByID = `-- name: GetRelationshipByID :one
+SELECT id, action_user_id, target_user_id, status, initial_message, created_at, updated_at
+FROM user_relationships
+WHERE id = $1
+`
+
+func (q *Queries) GetRelationshipByID(ctx context.Context, id uuid.UUID) (UserRelationship, error) {
+	row := q.db.QueryRow(ctx, getRelationshipByID, id)
+	var i UserRelationship
+	err := row.Scan(
+		&i.ID,
+		&i.ActionUserID,
+		&i.TargetUserID,
+		&i.Status,
+		&i.InitialMessage,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateRelationshipStatus = `-- name: UpdateRelationshipStatus :exec
 UPDATE user_relationships
 SET

@@ -47,7 +47,7 @@ WHERE user_id = $1;
 --
 
 -- name: GetUserSessions :many
-SELECT id, created_at, user_agent, ip_address
+SELECT id, token_hash, created_at, user_agent, ip_address
 FROM sessions
 WHERE user_id = $1
     AND expires_at > NOW()

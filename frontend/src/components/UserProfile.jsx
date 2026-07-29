@@ -47,8 +47,13 @@ export default function UserProfile({ user, onLogout }) {
   const handleRevokeSingle = async (sessionId) => {
     setRevokingId(sessionId);
     setSessionError("");
+    const targetSession = sessions.find((s) => s.id === sessionId);
     try {
       await revokeSession(sessionId);
+      if (targetSession?.is_current) {
+        onLogout();
+        return;
+      }
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
     } catch (err) {
       setSessionError(err.message || "Failed to revoke session");
@@ -64,6 +69,7 @@ export default function UserProfile({ user, onLogout }) {
     try {
       await Promise.all(sessions.map((s) => revokeSession(s.id)));
       setSessions([]);
+      onLogout();
     } catch (err) {
       setSessionError(err.message || "Failed to terminate all sessions");
     } finally {
@@ -134,11 +140,16 @@ export default function UserProfile({ user, onLogout }) {
         ) : (
           <ul className="sessions-list">
             {sessions.map((sess) => (
-              <li key={sess.id} className="session-card">
+              <li key={sess.id} className={`session-card ${sess.is_current ? "session-card-current" : ""}`}>
                 <div className="session-info">
                   <div className="session-device">
                     <span className="session-icon">💻</span>
                     <strong>{formatUserAgent(sess.user_agent)}</strong>
+                    {sess.is_current && (
+                      <span className="badge-current-session" style={{ marginLeft: "8px", fontSize: "12px", color: "var(--color-primary, #6366f1)", fontWeight: "600" }}>
+                        (Current Session)
+                      </span>
+                    )}
                   </div>
                   <div className="session-meta">
                     <span>IP: {sess.ip_address || "Unknown"}</span>

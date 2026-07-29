@@ -36,3 +36,8 @@ WHERE id = $4;
 -- name: DeleteRelationship :exec
 DELETE FROM user_relationships
 WHERE id = $1;
+
+-- name: GetRelationshipByID :one
+SELECT id, action_user_id, target_user_id, status, initial_message, created_at, updated_at
+FROM user_relationships
+WHERE id = $1;

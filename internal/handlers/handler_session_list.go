@@ -5,12 +5,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sergioferg/gochat/internal/auth"
 	"github.com/sergioferg/gochat/internal/respond"
 )
 
 func (api *API) HandlerGetSessions(w http.ResponseWriter, r *http.Request) {
 	type SessionResponse struct {
 		ID        uuid.UUID `json:"id"`
+		IsCurrent bool      `json:"is_current"`
 		CreatedAt time.Time `json:"created_at"`
 		UserAgent string    `json:"user_agent"`
 		IpAddress string    `json:"ip_address"`
@@ -26,6 +28,11 @@ func (api *API) HandlerGetSessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var currentHashedToken string
+	if cookie, err := r.Cookie("refresh_token"); err == nil && cookie.Value != "" {
+		currentHashedToken = auth.HashToken(cookie.Value)
+	}
+
 	dbSessions, err := api.DB.GetUserSessions(r.Context(), userID)
 	if err != nil {
 		respond.WithError(w, http.StatusInternalServerError, "Could not fetch sessions", err)
@@ -36,6 +43,7 @@ func (api *API) HandlerGetSessions(w http.ResponseWriter, r *http.Request) {
 	for _, t := range dbSessions {
 		sessions = append(sessions, SessionResponse{
 			ID:        t.ID,
+			IsCurrent: currentHashedToken != "" && t.TokenHash == currentHashedToken,
 			CreatedAt: t.CreatedAt,
 			UserAgent: t.UserAgent,
 			IpAddress: t.IpAddress,

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -140,8 +141,22 @@ func (api *API) HandlerGitHubCallback(w http.ResponseWriter, r *http.Request) {
 						Status:         "active",
 					})
 					if err != nil {
-						respond.WithError(w, http.StatusInternalServerError, "Something went wrong", err)
-						return
+						if database.IsPgErrorCode(err, "23505") {
+							suffixedNickname := fmt.Sprintf("%s_%s", githubUser.Login, generateRandomSuffix(4))
+							user, err = api.DB.CreateUser(r.Context(), database.CreateUserParams{
+								ID:             uuid.Must(uuid.NewV7()),
+								Email:          githubUser.Email,
+								Nickname:       suffixedNickname,
+								RealName:       githubUser.Name,
+								BirthDate:      nil,
+								HashedPassword: nil,
+								Status:         "active",
+							})
+						}
+						if err != nil {
+							respond.WithError(w, http.StatusInternalServerError, "Something went wrong", err)
+							return
+						}
 					}
 
 					_, err = api.DB.CreateOAuthGithubAccount(r.Context(), database.CreateOAuthGithubAccountParams{
@@ -240,4 +255,16 @@ func (api *API) HandlerGitHubCallback(w http.ResponseWriter, r *http.Request) {
 	frontendURL := fmt.Sprintf("%s/oauth-callback#access_token=%s", api.FrontendURL, accessToken)
 
 	http.Redirect(w, r, frontendURL, http.StatusFound)
+}
+
+func generateRandomSuffix(n int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		return "a7x9"
+	}
+	for i := range b {
+		b[i] = charset[int(b[i])%len(charset)]
+	}
+	return string(b)
 }

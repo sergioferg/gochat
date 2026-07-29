@@ -157,6 +157,11 @@ func main() {
 	mux.Handle("POST /messages", fullAccountChain.ThenFunc(api.HandlerSendMessage))
 	mux.Handle("PATCH /messages/{id}", fullAccountChain.ThenFunc(api.HandlerUpdateMessage))
 
+	// User requests
+	mux.Handle("GET /requests", fullAccountChain.ThenFunc(api.HandlerGetRequests))
+	mux.Handle("POST /requests", fullAccountChain.ThenFunc(api.HandlerCreateRequest))
+	mux.Handle("PATCH /requests/{id}", fullAccountChain.ThenFunc(api.HandlerUpdateRequest))
+
 	globalChain := alice.New(handlers.CORSMiddleware, api.SecurityHeadersMiddleware)
 
 	s := &http.Server{

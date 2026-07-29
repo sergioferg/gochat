@@ -15,10 +15,12 @@ function calculateAge(dobString) {
 }
 
 export default function CompleteProfile({ currentUser, onComplete }) {
+  const [nickname, setNickname] = useState(currentUser?.nickname || "");
   const [realName, setRealName] = useState(currentUser?.real_name || "");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [nicknameError, setNicknameError] = useState("");
 
   const age = calculateAge(dateOfBirth);
   const isUnderage = dateOfBirth && age < 18;
@@ -26,8 +28,9 @@ export default function CompleteProfile({ currentUser, onComplete }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setNicknameError("");
 
-    if (!realName || !dateOfBirth) {
+    if (!nickname || !realName || !dateOfBirth) {
       setError("Please fill out all fields.");
       return;
     }
@@ -40,6 +43,7 @@ export default function CompleteProfile({ currentUser, onComplete }) {
     setLoading(true);
     try {
       await updateUser({
+        nickname,
         real_name: realName,
         date_of_birth: dateOfBirth,
       });
@@ -47,7 +51,11 @@ export default function CompleteProfile({ currentUser, onComplete }) {
       const updatedUser = await fetchCurrentUser();
       onComplete(updatedUser);
     } catch (err) {
-      setError(err.message || "Failed to update profile.");
+      if (err.message && (err.message.includes("already exists") || err.message.includes("nickname_taken") || err.message.includes("already in use"))) {
+        setNicknameError("That nickname is already in use. Please choose another.");
+      } else {
+        setError(err.message || "Failed to update profile.");
+      }
     } finally {
       setLoading(false);
     }
@@ -64,6 +72,26 @@ export default function CompleteProfile({ currentUser, onComplete }) {
             </p>
             
             {error && <div className="alert alert-error">{error}</div>}
+
+            <div className="form-group">
+              <label htmlFor="cp-nickname">Nickname</label>
+              <input
+                id="cp-nickname"
+                type="text"
+                placeholder="e.g. octocat"
+                value={nickname}
+                onChange={(e) => {
+                  setNickname(e.target.value);
+                  setNicknameError("");
+                }}
+                required
+              />
+              {nicknameError && (
+                <span className="field-error-text" style={{ display: "block", marginTop: "var(--space-1)" }}>
+                  {nicknameError}
+                </span>
+              )}
+            </div>
 
             <div className="form-group">
               <label htmlFor="cp-real-name">Real Name</label>
