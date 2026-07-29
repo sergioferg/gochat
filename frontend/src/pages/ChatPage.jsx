@@ -231,23 +231,33 @@ export default function ChatPage({ currentUser }) {
               (currentActiveChatId === "general" && !payload.chat_id);
 
             if (matchesActiveChat) {
+              const ZERO_UUID = "00000000-0000-0000-0000-000000000000";
+              const validMsgId =
+                payload.message_id && payload.message_id !== ZERO_UUID
+                  ? payload.message_id
+                  : null;
+
               setChatLog((prevLog) => {
                 const isDuplicate = prevLog.some(
                   (msg) =>
-                    (msg.id && msg.id === payload.message_id) ||
+                    (validMsgId && msg.id === validMsgId) ||
                     (msg.sender === "me" && isMe && msg.text === payload.content && msg.pending)
                 );
                 if (isDuplicate) {
                   return prevLog.map((msg) =>
                     msg.sender === "me" && isMe && msg.text === payload.content && msg.pending
-                      ? { id: payload.message_id, sender: "me", text: payload.content }
+                      ? {
+                          ...msg,
+                          id: validMsgId || msg.id,
+                          pending: false,
+                        }
                       : msg
                   );
                 }
                 return [
                   ...prevLog,
                   {
-                    id: payload.message_id || `msg-${Date.now()}-${Math.random()}`,
+                    id: validMsgId || `msg-${Date.now()}-${Math.random()}`,
                     sender: isMe ? "me" : "them",
                     text: payload.content,
                     chatId: payload.chat_id,

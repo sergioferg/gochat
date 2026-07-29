@@ -145,6 +145,7 @@ func (api *API) HandlerSendMessage(w http.ResponseWriter, r *http.Request) {
 		Type:          "new_message",
 		ChatID:        params.ChatID,
 		SenderID:      userID,
+		MessageID:     message.ID,
 		Content:       params.Content,
 		TargetUserIDs: targetIDs,
 	}
