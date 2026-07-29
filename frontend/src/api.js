@@ -167,11 +167,21 @@ export async function refreshToken() {
   return data;
 }
 
-export async function sendMessage(text) {
+export async function sendMessage(chatId, content) {
   return await request("/messages", {
     method: "POST",
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({
+      chat_id: chatId,
+      content: content,
+    }),
   });
+}
+
+export async function fetchChatMessages(chatId) {
+  const data = await request(`/chats/${chatId}/messages`, {
+    method: "GET",
+  });
+  return data?.messages || [];
 }
 
 export async function fetchActiveSessions() {

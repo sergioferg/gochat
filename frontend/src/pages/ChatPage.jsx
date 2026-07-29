@@ -251,7 +251,7 @@ export default function ChatPage({ currentUser }) {
     setSending(true);
 
     try {
-      await sendMessage(userMessage);
+      await sendMessage(activeChatId, userMessage);
     } catch (error) {
       console.error("Failed to send message:", error);
       setChatLog((prevLog) => [
