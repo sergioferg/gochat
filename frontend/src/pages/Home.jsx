@@ -4,6 +4,11 @@ export default function Home({ currentUser, onOpenAuthModal }) {
   return (
     <main className="page-container">
       <div className="hero-card" style={{ textAlign: "center", padding: "var(--space-8) var(--space-4)" }}>
+        <img
+          src="/logo.png"
+          alt="GoChat Logo"
+          style={{ width: "80px", height: "80px", marginBottom: "var(--space-4)", objectFit: "contain" }}
+        />
         <h1>Welcome to GoChat</h1>
         <p style={{ maxWidth: "600px", margin: "0 auto var(--space-6)" }}>
           A real-time messaging application connected to a Go server on Azure App Service and deployed via Azure Static Web Apps.

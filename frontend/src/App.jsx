@@ -88,8 +88,9 @@ function App() {
         <div className="chat-container">
             {/* Top Navigation Bar */}
             <header className="top-nav">
-                <Link to="/" className="nav-brand" style={{ textDecoration: "none" }}>
-                    GoChat
+                <Link to="/" className="nav-brand" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "10px" }}>
+                    <img src="/logo.png" alt="GoChat Logo" style={{ width: "28px", height: "28px", borderRadius: "6px", objectFit: "contain" }} />
+                    <span>GoChat</span>
                 </Link>
                 <div className="nav-links">
                     {currentUser ? (

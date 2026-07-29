@@ -194,3 +194,42 @@ export async function updateUser(updates) {
   });
 }
 
+export async function searchUsers(query) {
+  if (!query || !query.trim()) return [];
+  const data = await request(`/users/search?q=${encodeURIComponent(query.trim())}`, {
+    method: "GET",
+  });
+  return data?.users || [];
+}
+
+export async function sendRequest(targetUserId, initialMessage = "") {
+  return await request("/requests", {
+    method: "POST",
+    body: JSON.stringify({
+      target_user_id: targetUserId,
+      initial_message: initialMessage ? initialMessage.trim() : undefined,
+    }),
+  });
+}
+
+export async function fetchPendingRequests() {
+  const data = await request("/requests", {
+    method: "GET",
+  });
+  return data?.requests || [];
+}
+
+export async function updateRequestAction(requestId, action) {
+  return await request(`/requests/${requestId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ action }),
+  });
+}
+
+export async function fetchUserChats() {
+  const data = await request("/chats", {
+    method: "GET",
+  });
+  return Array.isArray(data) ? data : [];
+}
+
