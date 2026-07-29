@@ -88,6 +88,19 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const getBirthDateById = `-- name: GetBirthDateById :one
+
+SELECT birth_date FROM users
+WHERE id = $1
+`
+
+func (q *Queries) GetBirthDateById(ctx context.Context, id uuid.UUID) (*time.Time, error) {
+	row := q.db.QueryRow(ctx, getBirthDateById, id)
+	var birth_date *time.Time
+	err := row.Scan(&birth_date)
+	return birth_date, err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 
 SELECT id, nickname, real_name, birth_date, email, hashed_password, status, created_at, updated_at, deleted_at FROM users

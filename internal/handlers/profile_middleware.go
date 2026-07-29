@@ -32,30 +32,23 @@ func (api *API) RequireCompletedProfile(next http.Handler) http.Handler {
 			return
 		}
 
-		var birthDate *time.Time
-		err := api.Pool.QueryRow(r.Context(), "SELECT birth_date FROM users WHERE id = $1", userID).Scan(&birthDate)
+		birthDate, err := api.DB.GetBirthDateById(r.Context(), userID)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				respond.WithError(w, http.StatusNotFound, "User not found", err)
 				return
 			}
-			respond.WithError(w, http.StatusInternalServerError, "Database error", err)
+			respond.WithError(w, http.StatusInternalServerError, "Something went wrong", err)
 			return
 		}
 
 		if birthDate == nil || birthDate.IsZero() {
-			respond.WithJSON(w, http.StatusForbidden, profileIncompleteResponse{
-				Error:   "profile_incomplete",
-				Message: "You must complete your profile and provide a valid date of birth before accessing this feature.",
-			})
+			respond.WithError(w, http.StatusForbidden, "You must complete your profile and provide a valid date of birth before accessing this feature.", nil)
 			return
 		}
 
 		if calculateAge(*birthDate) < 18 {
-			respond.WithJSON(w, http.StatusForbidden, profileIncompleteResponse{
-				Error:   "underage",
-				Message: "You must be at least 18 years old to use GoChat.",
-			})
+			respond.WithError(w, http.StatusForbidden, "You must be at least 18 years old to use GoChat.", nil)
 			return
 		}
 

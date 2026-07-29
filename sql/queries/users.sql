@@ -72,3 +72,8 @@ SET
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND status != 'deleted';
 --
+
+-- name: GetBirthDateById :one
+SELECT birth_date FROM users
+WHERE id = $1;
+--
