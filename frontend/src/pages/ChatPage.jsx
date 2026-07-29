@@ -7,6 +7,7 @@ import {
   fetchPendingRequests,
   updateRequestAction,
   fetchUserChats,
+  fetchChatMessages,
 } from "../api";
 
 export default function ChatPage({ currentUser }) {
@@ -16,6 +17,7 @@ export default function ChatPage({ currentUser }) {
   const [chatLog, setChatLog] = useState([
     { id: "sys-1", sender: "system", text: "Welcome to GoChat." },
   ]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Search & Request states
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,6 +38,14 @@ export default function ChatPage({ currentUser }) {
   const [activeChatId, setActiveChatId] = useState("general");
 
   const wsRef = useRef(null);
+  const chatWindowRef = useRef(null);
+
+  // Auto scroll chat window to bottom when messages update
+  useEffect(() => {
+    if (chatWindowRef.current) {
+      chatWindowRef.current.scrollTop = chatWindowRef.current.scrollHeight;
+    }
+  }, [chatLog, loadingHistory]);
 
   // Load Pending Requests
   const loadRequests = async () => {
@@ -70,6 +80,38 @@ export default function ChatPage({ currentUser }) {
     loadRequests();
     loadChats();
   }, []);
+
+  // Fetch Message History when activeChatId changes
+  useEffect(() => {
+    if (!activeChatId || activeChatId === "general") {
+      setChatLog([{ id: "sys-1", sender: "system", text: "Welcome to GoChat." }]);
+      return;
+    }
+
+    async function loadHistory() {
+      setLoadingHistory(true);
+      try {
+        const msgs = await fetchChatMessages(activeChatId);
+        const formatted = msgs.map((m) => ({
+          id: m.id,
+          sender: m.sender_id === currentUser?.id ? "me" : "them",
+          text: m.content,
+          createdAt: m.created_at,
+          chatId: m.chat_id,
+        }));
+        setChatLog(formatted);
+      } catch (err) {
+        console.error("Failed to load chat history:", err);
+        setChatLog([
+          { id: "sys-err", sender: "system", text: "Failed to load chat history." },
+        ]);
+      } finally {
+        setLoadingHistory(false);
+      }
+    }
+
+    loadHistory();
+  }, [activeChatId, currentUser?.id]);
 
   // Debounced user search
   useEffect(() => {
@@ -139,11 +181,9 @@ export default function ChatPage({ currentUser }) {
     setActionInProgress((prev) => ({ ...prev, [requestId]: action }));
     try {
       const res = await updateRequestAction(requestId, action);
-      // Remove request from UI list
       setPendingRequests((prev) => prev.filter((r) => r.id !== requestId));
 
       if (action === "accept") {
-        // Refetch chats and select newly created chat
         const newChatId = res?.chat_id;
         await loadChats(newChatId);
       }
@@ -180,28 +220,38 @@ export default function ChatPage({ currentUser }) {
           const payload = JSON.parse(event.data);
           if (payload.type === "new_message") {
             const isMe = payload.sender_id === currentUser?.id;
-            setChatLog((prevLog) => {
-              const isDuplicate = prevLog.some(
-                (msg) =>
-                  (msg.id && msg.id === payload.message_id) ||
-                  (msg.sender === "me" && isMe && msg.text === payload.content && msg.pending)
-              );
-              if (isDuplicate) {
-                return prevLog.map((msg) =>
-                  msg.sender === "me" && isMe && msg.text === payload.content && msg.pending
-                    ? { id: payload.message_id, sender: "me", text: payload.content }
-                    : msg
+            const matchesActiveChat =
+              payload.chat_id === activeChatId ||
+              (activeChatId === "general" && !payload.chat_id);
+
+            if (matchesActiveChat) {
+              setChatLog((prevLog) => {
+                const isDuplicate = prevLog.some(
+                  (msg) =>
+                    (msg.id && msg.id === payload.message_id) ||
+                    (msg.sender === "me" && isMe && msg.text === payload.content && msg.pending)
                 );
-              }
-              return [
-                ...prevLog,
-                {
-                  id: payload.message_id || `msg-${Date.now()}-${Math.random()}`,
-                  sender: isMe ? "me" : "them",
-                  text: payload.content,
-                },
-              ];
-            });
+                if (isDuplicate) {
+                  return prevLog.map((msg) =>
+                    msg.sender === "me" && isMe && msg.text === payload.content && msg.pending
+                      ? { id: payload.message_id, sender: "me", text: payload.content }
+                      : msg
+                  );
+                }
+                return [
+                  ...prevLog,
+                  {
+                    id: payload.message_id || `msg-${Date.now()}-${Math.random()}`,
+                    sender: isMe ? "me" : "them",
+                    text: payload.content,
+                    chatId: payload.chat_id,
+                  },
+                ];
+              });
+            }
+
+            // Always update sidebar chat preview when a new message arrives
+            loadChats();
           }
         } catch (err) {
           console.error("Error parsing WebSocket message:", err);
@@ -234,7 +284,7 @@ export default function ChatPage({ currentUser }) {
         socket.close();
       }
     };
-  }, [currentUser?.id]);
+  }, [currentUser?.id, activeChatId]);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -491,12 +541,22 @@ export default function ChatPage({ currentUser }) {
           </div>
         </div>
 
-        <div className="chat-window">
-          {chatLog.map((msg) => (
-            <div key={msg.id} className={`message ${msg.sender}`}>
-              {msg.text}
+        <div className="chat-window" ref={chatWindowRef}>
+          {loadingHistory ? (
+            <div className="search-loading" style={{ margin: "auto" }}>
+              <span className="spinner-lg" />
             </div>
-          ))}
+          ) : chatLog.length === 0 ? (
+            <p className="placeholder-text" style={{ margin: "auto" }}>
+              No messages yet. Send a message to start chatting!
+            </p>
+          ) : (
+            chatLog.map((msg) => (
+              <div key={msg.id} className={`message ${msg.sender}`}>
+                {msg.text}
+              </div>
+            ))
+          )}
         </div>
 
         <form onSubmit={handleSend} className="chat-input-area">
