@@ -12,7 +12,7 @@ VALUES(
     $2,
     'github',
     $3,
-    NOW() AT TIME ZONE 'UTC'
+    NOW()
 )
 RETURNING *;
 --

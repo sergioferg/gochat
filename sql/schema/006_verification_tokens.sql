@@ -2,8 +2,8 @@
 CREATE TABLE email_verification_tokens (
     token_hash TEXT PRIMARY KEY,
     user_id UUID NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
-    expires_at TIMESTAMPTZ NOT NULL DEFAULT ((NOW() AT TIME ZONE 'UTC') + INTERVAL '24 hours'),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '24 hours'),
 
     CONSTRAINT fk_user_id
         FOREIGN KEY (user_id)

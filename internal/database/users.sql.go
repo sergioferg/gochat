@@ -21,8 +21,8 @@ SET
     nickname = CONCAT('deleted_', id),
     real_name = 'Deleted User',
     status = 'deleted',
-    deleted_at = CURRENT_TIMESTAMP,
-    updated_at = CURRENT_TIMESTAMP
+    deleted_at = NOW(),
+    updated_at = NOW()
 WHERE id = $1 AND status != 'deleted'
 `
 
@@ -184,6 +184,45 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) ([]GetUserByIDR
 	return items, nil
 }
 
+const getUsersByNickname = `-- name: GetUsersByNickname :many
+
+SELECT id, nickname, real_name
+FROM users
+WHERE nickname ILIKE $1 AND id != $2
+LIMIT 20
+`
+
+type GetUsersByNicknameParams struct {
+	Nickname string
+	ID       uuid.UUID
+}
+
+type GetUsersByNicknameRow struct {
+	ID       uuid.UUID
+	Nickname string
+	RealName string
+}
+
+func (q *Queries) GetUsersByNickname(ctx context.Context, arg GetUsersByNicknameParams) ([]GetUsersByNicknameRow, error) {
+	rows, err := q.db.Query(ctx, getUsersByNickname, arg.Nickname, arg.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUsersByNicknameRow
+	for rows.Next() {
+		var i GetUsersByNicknameRow
+		if err := rows.Scan(&i.ID, &i.Nickname, &i.RealName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateUser = `-- name: UpdateUser :one
 
 UPDATE users
@@ -193,7 +232,7 @@ SET
     real_name = COALESCE($3, real_name),
     birth_date = COALESCE($4, birth_date),
     hashed_password = COALESCE($5, hashed_password),
-    updated_at = NOW() AT TIME ZONE 'UTC'
+    updated_at = NOW()
 WHERE id = $6 AND status = 'active'
 RETURNING id, nickname, real_name, birth_date, email, hashed_password, status, created_at, updated_at, deleted_at
 `
@@ -236,7 +275,7 @@ const verifyUser = `-- name: VerifyUser :exec
 
 UPDATE users
 SET status = 'active',
-    updated_at = NOW() AT TIME ZONE 'UTC'
+    updated_at = NOW()
 WHERE id = $1 AND status = 'unverified'
 `
 

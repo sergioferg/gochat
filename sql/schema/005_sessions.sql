@@ -2,12 +2,12 @@
 CREATE TABLE sessions(
     id UUID PRIMARY KEY,
     token_hash TEXT UNIQUE NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     user_id UUID NOT NULL,
     user_agent TEXT NOT NULL,
     ip_address TEXT NOT NULL,
-    expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC') + INTERVAL '60 days',
+    expires_at TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '60 days',
     revoked_at TIMESTAMPTZ,
     CONSTRAINT fk_user_id
         FOREIGN KEY (user_id)

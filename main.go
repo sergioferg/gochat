@@ -149,6 +149,7 @@ func main() {
 	// Delete and Update users
 	mux.Handle("DELETE /users", authChain.ThenFunc(api.HandlerUserDelete))
 	mux.Handle("PATCH /users", authChain.ThenFunc(api.HandlerUserUpdate))
+	mux.Handle("GET /users/search", fullAccountChain.ThenFunc(api.HandlerUsersSearch))
 	mux.Handle("GET /me", authChain.ThenFunc(api.HandlerGetMe))
 
 	// Real-time connections / Messages

@@ -7,21 +7,18 @@ package database
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
 
-const createUserRelationship = `-- name: CreateUserRelationship :exec
-INSERT INTO user_relationships(id, action_user_id, target_user_id, status, initial_message, created_at, updated_at)
-VALUES(
-    $1,
-    $2,
-    $3,
-    $4,
-    $5,
-    NOW() AT TIME ZONE 'UTC',
-    NOW() AT TIME ZONE 'UTC'
+const createUserRelationship = `-- name: CreateUserRelationship :one
+INSERT INTO user_relationships (
+    id, action_user_id, target_user_id, status, initial_message, created_at, updated_at
+) VALUES (
+    $1, $2, $3, $4, $5, NOW(), NOW()
 )
+RETURNING id, action_user_id, target_user_id, status, initial_message, created_at, updated_at
 `
 
 type CreateUserRelationshipParams struct {
@@ -32,32 +29,136 @@ type CreateUserRelationshipParams struct {
 	InitialMessage *string
 }
 
-func (q *Queries) CreateUserRelationship(ctx context.Context, arg CreateUserRelationshipParams) error {
-	_, err := q.db.Exec(ctx, createUserRelationship,
+func (q *Queries) CreateUserRelationship(ctx context.Context, arg CreateUserRelationshipParams) (UserRelationship, error) {
+	row := q.db.QueryRow(ctx, createUserRelationship,
 		arg.ID,
 		arg.ActionUserID,
 		arg.TargetUserID,
 		arg.Status,
 		arg.InitialMessage,
 	)
+	var i UserRelationship
+	err := row.Scan(
+		&i.ID,
+		&i.ActionUserID,
+		&i.TargetUserID,
+		&i.Status,
+		&i.InitialMessage,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const deleteRelationship = `-- name: DeleteRelationship :exec
+DELETE FROM user_relationships
+WHERE id = $1
+`
+
+func (q *Queries) DeleteRelationship(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteRelationship, id)
 	return err
 }
 
-const updateUserRelationship = `-- name: UpdateUserRelationship :exec
-
-UPDATE user_relationships
-SET
-    status = $1
-WHERE action_user_id = $2 AND target_user_id = $3
+const getPendingRequestsForUser = `-- name: GetPendingRequestsForUser :many
+SELECT
+    r.id,
+    r.action_user_id AS sender_id,
+    u.nickname AS sender_nickname,
+    u.real_name AS sender_real_name,
+    r.initial_message,
+    r.created_at
+FROM user_relationships r
+JOIN users u ON u.id = r.action_user_id
+WHERE r.target_user_id = $1 AND r.status = 'pending'
 `
 
-type UpdateUserRelationshipParams struct {
-	Status       string
+type GetPendingRequestsForUserRow struct {
+	ID             uuid.UUID
+	SenderID       uuid.UUID
+	SenderNickname string
+	SenderRealName string
+	InitialMessage *string
+	CreatedAt      time.Time
+}
+
+func (q *Queries) GetPendingRequestsForUser(ctx context.Context, targetUserID uuid.UUID) ([]GetPendingRequestsForUserRow, error) {
+	rows, err := q.db.Query(ctx, getPendingRequestsForUser, targetUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPendingRequestsForUserRow
+	for rows.Next() {
+		var i GetPendingRequestsForUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SenderID,
+			&i.SenderNickname,
+			&i.SenderRealName,
+			&i.InitialMessage,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRelationshipBetweenUsers = `-- name: GetRelationshipBetweenUsers :one
+SELECT id, action_user_id, target_user_id, status, initial_message, created_at, updated_at
+FROM user_relationships
+WHERE (action_user_id = $1 AND target_user_id = $2)
+   OR (action_user_id = $2 AND target_user_id = $1)
+`
+
+type GetRelationshipBetweenUsersParams struct {
 	ActionUserID uuid.UUID
 	TargetUserID uuid.UUID
 }
 
-func (q *Queries) UpdateUserRelationship(ctx context.Context, arg UpdateUserRelationshipParams) error {
-	_, err := q.db.Exec(ctx, updateUserRelationship, arg.Status, arg.ActionUserID, arg.TargetUserID)
+func (q *Queries) GetRelationshipBetweenUsers(ctx context.Context, arg GetRelationshipBetweenUsersParams) (UserRelationship, error) {
+	row := q.db.QueryRow(ctx, getRelationshipBetweenUsers, arg.ActionUserID, arg.TargetUserID)
+	var i UserRelationship
+	err := row.Scan(
+		&i.ID,
+		&i.ActionUserID,
+		&i.TargetUserID,
+		&i.Status,
+		&i.InitialMessage,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateRelationshipStatus = `-- name: UpdateRelationshipStatus :exec
+UPDATE user_relationships
+SET
+    status = $1,
+    action_user_id = $2,
+    target_user_id = $3,
+    updated_at = NOW()
+WHERE id = $4
+`
+
+type UpdateRelationshipStatusParams struct {
+	Status       string
+	ActionUserID uuid.UUID
+	TargetUserID uuid.UUID
+	ID           uuid.UUID
+}
+
+func (q *Queries) UpdateRelationshipStatus(ctx context.Context, arg UpdateRelationshipStatusParams) error {
+	_, err := q.db.Exec(ctx, updateRelationshipStatus,
+		arg.Status,
+		arg.ActionUserID,
+		arg.TargetUserID,
+		arg.ID,
+	)
 	return err
 }

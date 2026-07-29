@@ -1,12 +1,12 @@
 -- +goose Up
-CREATE TABLE user_relationships(
+CREATE TABLE user_relationships (
     id UUID PRIMARY KEY,
     action_user_id UUID NOT NULL,
     target_user_id UUID NOT NULL,
     status TEXT NOT NULL,
     initial_message TEXT,
-    created_at TIMESTAMPTZ NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT fk_action_user
         FOREIGN KEY (action_user_id)

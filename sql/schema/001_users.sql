@@ -7,8 +7,8 @@ CREATE TABLE users(
     email TEXT NOT NULL UNIQUE,
     hashed_password TEXT,
     status TEXT NOT NULL DEFAULT 'unverified',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ DEFAULT NULL,
 
     CONSTRAINT users_status_check CHECK (status IN ('unverified', 'active', 'deactivated', 'deleted'))

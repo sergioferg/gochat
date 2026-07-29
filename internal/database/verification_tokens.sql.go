@@ -57,7 +57,7 @@ SELECT u.id, u.nickname, u.real_name, u.birth_date, u.email, u.hashed_password, 
 FROM email_verification_tokens evt
 JOIN users u ON evt.user_id = u.id
 WHERE evt.token_hash = $1
-  AND evt.expires_at > (NOW() AT TIME ZONE 'UTC')
+  AND evt.expires_at > NOW()
 `
 
 func (q *Queries) GetUserFromVerificationToken(ctx context.Context, tokenHash string) (User, error) {

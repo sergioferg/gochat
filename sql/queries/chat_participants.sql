@@ -5,7 +5,7 @@ VALUES ($1, $2);
 
 -- name: UpdateLastRead :exec
 UPDATE chat_participants
-SET last_read_at = NOW() AT TIME ZONE 'UTC'
+SET last_read_at = NOW()
 WHERE chat_id = $1 AND user_id = $2;
 --
 

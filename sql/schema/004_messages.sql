@@ -4,8 +4,8 @@ CREATE TABLE messages(
     content TEXT NOT NULL,
     sender_id UUID NOT NULL,
     chat_id UUID NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_user_id
         FOREIGN KEY (sender_id)
         REFERENCES users(id) ON DELETE CASCADE,

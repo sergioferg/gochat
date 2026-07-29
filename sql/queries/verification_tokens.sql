@@ -20,5 +20,5 @@ SELECT u.*
 FROM email_verification_tokens evt
 JOIN users u ON evt.user_id = u.id
 WHERE evt.token_hash = $1
-  AND evt.expires_at > (NOW() AT TIME ZONE 'UTC');
+  AND evt.expires_at > NOW();
 --

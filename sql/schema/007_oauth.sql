@@ -4,7 +4,7 @@ CREATE TABLE oauth_accounts(
     user_id UUID NOT NULL,
     provider TEXT NOT NULL,          -- 'google', 'github', 'apple'
     provider_user_id TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT fk_user_id
         FOREIGN KEY (user_id)

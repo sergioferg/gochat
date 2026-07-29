@@ -48,7 +48,7 @@ SET
     real_name = COALESCE(sqlc.narg('real_name'), real_name),
     birth_date = COALESCE(sqlc.narg('birth_date'), birth_date),
     hashed_password = COALESCE(sqlc.narg('hashed_password'), hashed_password),
-    updated_at = NOW() AT TIME ZONE 'UTC'
+    updated_at = NOW()
 WHERE id = sqlc.arg('id') AND status = 'active'
 RETURNING *;
 --
@@ -56,7 +56,7 @@ RETURNING *;
 -- name: VerifyUser :exec
 UPDATE users
 SET status = 'active',
-    updated_at = NOW() AT TIME ZONE 'UTC'
+    updated_at = NOW()
 WHERE id = $1 AND status = 'unverified';
 --
 
@@ -68,8 +68,8 @@ SET
     nickname = CONCAT('deleted_', id),
     real_name = 'Deleted User',
     status = 'deleted',
-    deleted_at = CURRENT_TIMESTAMP,
-    updated_at = CURRENT_TIMESTAMP
+    deleted_at = NOW(),
+    updated_at = NOW()
 WHERE id = $1 AND status != 'deleted';
 --
 
@@ -77,3 +77,9 @@ WHERE id = $1 AND status != 'deleted';
 SELECT birth_date FROM users
 WHERE id = $1;
 --
+
+-- name: GetUsersByNickname :many
+SELECT id, nickname, real_name
+FROM users
+WHERE nickname ILIKE $1 AND id != $2
+LIMIT 20;

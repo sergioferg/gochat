@@ -19,7 +19,7 @@ VALUES(
     $2,
     'github',
     $3,
-    NOW() AT TIME ZONE 'UTC'
+    NOW()
 )
 RETURNING id, user_id, provider, provider_user_id, created_at
 `

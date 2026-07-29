@@ -3,7 +3,7 @@ CREATE TABLE chats (
     id UUID PRIMARY KEY,
     name TEXT,
     is_group BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- +goose Down

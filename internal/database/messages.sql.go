@@ -147,7 +147,7 @@ const updateMessage = `-- name: UpdateMessage :one
 
 UPDATE messages
 SET content = $1,
-    updated_at = NOW() AT TIME ZONE 'UTC'
+    updated_at = NOW()
 WHERE id = $2
 RETURNING id, content, sender_id, chat_id, created_at, updated_at
 `
