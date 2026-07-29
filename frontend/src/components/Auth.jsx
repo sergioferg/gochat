@@ -113,16 +113,7 @@ export default function Auth({ onLoginSuccess, initialMode = "login" }) {
         `Account created successfully for ${res?.nickname || regNickname}. Please check your email to complete verification.`
       );
     } catch (err) {
-      const errMsg = err?.message || "";
-      if (
-        errMsg.toLowerCase().includes("conflict") ||
-        errMsg.toLowerCase().includes("already exists") ||
-        errMsg.toLowerCase().includes("taken")
-      ) {
-        setError("The nickname or email is already taken. Please choose another.");
-      } else {
-        setError(errMsg || "Failed to register account");
-      }
+      setError(err.message || "Failed to register account");
     } finally {
       setLoading(false);
     }

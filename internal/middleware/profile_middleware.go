@@ -1,4 +1,4 @@
-package handlers
+package middleware
 
 import (
 	"errors"
@@ -24,7 +24,7 @@ type profileIncompleteResponse struct {
 	Message string `json:"message"`
 }
 
-func (api *API) RequireCompletedProfile(next http.Handler) http.Handler {
+func (mw *Config) RequireCompletedProfile(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := r.Context().Value(UserIDContextKey).(uuid.UUID)
 		if !ok {
@@ -32,7 +32,7 @@ func (api *API) RequireCompletedProfile(next http.Handler) http.Handler {
 			return
 		}
 
-		birthDate, err := api.DB.GetBirthDateById(r.Context(), userID)
+		birthDate, err := mw.DB.GetBirthDateById(r.Context(), userID)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				respond.WithError(w, http.StatusNotFound, "User not found", err)

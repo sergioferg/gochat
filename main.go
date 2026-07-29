@@ -17,6 +17,7 @@ import (
 	"github.com/justinas/alice"
 	"github.com/sergioferg/gochat/internal/database"
 	"github.com/sergioferg/gochat/internal/handlers"
+	"github.com/sergioferg/gochat/internal/middleware"
 	"github.com/sergioferg/gochat/internal/pubsub"
 	"github.com/sergioferg/gochat/internal/routing"
 	"github.com/sergioferg/gochat/internal/ws"
@@ -97,6 +98,13 @@ func main() {
 		ResendApiKey:   resendKey,
 		BackendURL:     backURL,
 		FrontendURL:    frontURL,
+		Platform:       platform,
+	}
+
+	mw := middleware.Config{
+		DB:       dbQueries,
+		Secret:   secret,
+		Platform: platform,
 	}
 
 	// Start listening in the background
@@ -134,8 +142,8 @@ func main() {
 	mux.HandleFunc("GET /oauth/github/login", api.HandlerGitHubLogin)
 	mux.HandleFunc("GET /oauth/github/callback", api.HandlerGitHubCallback)
 
-	authChain := alice.New(api.AuthMiddleware)
-	fullAccountChain := alice.New(api.AuthMiddleware, api.RequireCompletedProfile)
+	authChain := alice.New(mw.AuthMiddleware)
+	fullAccountChain := alice.New(mw.AuthMiddleware, mw.RequireCompletedProfile)
 
 	// Chat management
 	mux.Handle("GET /chats", fullAccountChain.ThenFunc(api.HandlerGetUserChats))
@@ -162,7 +170,7 @@ func main() {
 	mux.Handle("POST /requests", fullAccountChain.ThenFunc(api.HandlerCreateRequest))
 	mux.Handle("PATCH /requests/{id}", fullAccountChain.ThenFunc(api.HandlerUpdateRequest))
 
-	globalChain := alice.New(handlers.CORSMiddleware, api.SecurityHeadersMiddleware)
+	globalChain := alice.New(middleware.CORSMiddleware, mw.SecurityHeadersMiddleware)
 
 	s := &http.Server{
 		Addr:         ":" + port,

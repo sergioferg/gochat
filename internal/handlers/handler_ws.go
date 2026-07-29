@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/sergioferg/gochat/internal/middleware"
 	"github.com/sergioferg/gochat/internal/respond"
 	"github.com/sergioferg/gochat/internal/ws"
 	"github.com/sirupsen/logrus"
@@ -21,7 +22,7 @@ var upgrader = websocket.Upgrader{
 
 // Upgrades the connection and registers the client
 func (api *API) HandlerWebSocket(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(UserIDContextKey).(uuid.UUID)
+	userID, ok := r.Context().Value(middleware.UserIDContextKey).(uuid.UUID)
 	if !ok {
 		respond.WithError(w, http.StatusForbidden, "Not authorized", nil)
 		return

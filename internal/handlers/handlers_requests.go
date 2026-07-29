@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/sergioferg/gochat/internal/database"
+	"github.com/sergioferg/gochat/internal/middleware"
 	"github.com/sergioferg/gochat/internal/respond"
 )
 
@@ -22,7 +23,7 @@ type Request struct {
 	Status         string    `json:"status,omitempty"`
 	InitialMessage *string   `json:"initial_message"`
 	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	UpdatedAt      time.Time `json:"updated_at,omitempty"`
 }
 
 func (api *API) HandlerGetRequests(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +31,7 @@ func (api *API) HandlerGetRequests(w http.ResponseWriter, r *http.Request) {
 		Requests []Request `json:"requests"`
 	}
 
-	userID, ok := r.Context().Value(UserIDContextKey).(uuid.UUID)
+	userID, ok := r.Context().Value(middleware.UserIDContextKey).(uuid.UUID)
 	if !ok {
 		respond.WithError(w, http.StatusForbidden, "Not authorized", nil)
 		return
@@ -65,7 +66,7 @@ func (api *API) HandlerCreateRequest(w http.ResponseWriter, r *http.Request) {
 		InitialMessage *string   `json:"initial_message"`
 	}
 
-	userID, ok := r.Context().Value(UserIDContextKey).(uuid.UUID)
+	userID, ok := r.Context().Value(middleware.UserIDContextKey).(uuid.UUID)
 	if !ok {
 		respond.WithError(w, http.StatusForbidden, "Not authorized", nil)
 		return
@@ -134,7 +135,7 @@ func (api *API) HandlerUpdateRequest(w http.ResponseWriter, r *http.Request) {
 		Action string `json:"action"`
 	}
 
-	userID, ok := r.Context().Value(UserIDContextKey).(uuid.UUID)
+	userID, ok := r.Context().Value(middleware.UserIDContextKey).(uuid.UUID)
 	if !ok {
 		respond.WithError(w, http.StatusForbidden, "Not authorized", nil)
 		return

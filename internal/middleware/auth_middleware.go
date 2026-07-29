@@ -1,4 +1,4 @@
-package handlers
+package middleware
 
 import (
 	"context"
@@ -12,7 +12,7 @@ type contextKey string
 
 const UserIDContextKey contextKey = "userID"
 
-func (api *API) AuthMiddleware(next http.Handler) http.Handler {
+func (mw *Config) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var accessToken string
 
@@ -26,7 +26,7 @@ func (api *API) AuthMiddleware(next http.Handler) http.Handler {
 			}
 		}
 
-		userID, err := auth.ValidateJWT(accessToken, api.Secret)
+		userID, err := auth.ValidateJWT(accessToken, mw.Secret)
 		if err != nil {
 			respond.WithError(w, http.StatusUnauthorized, "Invalid token", nil)
 			return
