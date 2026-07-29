@@ -46,6 +46,7 @@ GoChat uses **JWT (JSON Web Tokens)** for authenticating API requests.
 | `POST` | `/logout` | Terminate user session and revoke refresh token | Yes |
 | `POST` | `/refresh` | Obtain a new access token using a valid refresh token | No |
 | `GET` | `/me` | Retrieve authenticated user profile information | Yes |
+| `GET` | `/users/search` | Search for users by nickname query | Yes |
 | `PATCH` | `/users` | Update user profile details (nickname, email, password) | Yes |
 | `DELETE` | `/users` | Delete authenticated user account | Yes |
 
@@ -66,6 +67,16 @@ GoChat uses **JWT (JSON Web Tokens)** for authenticating API requests.
 | :--- | :--- | :--- | :---: |
 | `GET` | `/sessions` | List all active login sessions for the authenticated user | Yes |
 | `DELETE` | `/sessions/{id}` | Revoke a specific active session by ID | Yes |
+
+---
+
+### User Relationships & Requests
+
+| Method | Endpoint | Description | Auth Required |
+| :--- | :--- | :--- | :---: |
+| `GET` | `/requests` | Retrieve pending incoming chat requests for authenticated user | Yes |
+| `POST` | `/requests` | Send a new chat request to another user | Yes |
+| `PATCH` | `/requests/{id}` | Respond to a chat request (`accept`, `reject`, or `block`) | Yes |
 
 ---
 

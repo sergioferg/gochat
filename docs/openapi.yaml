@@ -142,6 +142,51 @@ paths:
                             schema:
                                 $ref: "#/components/schemas/ErrorResponse"
 
+    /users/search:
+        get:
+            summary: Search Users by Nickname
+            description: Searches for users by nickname substring, excluding the authenticated user. Requires `q` query parameter.
+            security:
+                - BearerAuth: []
+            parameters:
+                - in: query
+                  name: q
+                  required: true
+                  schema:
+                      type: string
+                  description: Search query string for matching nicknames
+            responses:
+                "200":
+                    description: List of matching users
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/UsersSearchResponse"
+                "400":
+                    description: Bad request (missing search query)
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "401":
+                    description: Unauthorized
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "403":
+                    description: Forbidden
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "500":
+                    description: Internal server error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
     /me:
         get:
             summary: Get Authenticated User Profile
@@ -676,6 +721,153 @@ paths:
                             schema:
                                 $ref: "#/components/schemas/ErrorResponse"
 
+    /requests:
+        get:
+            summary: List Pending Requests
+            description: Retrieves pending incoming user relationship/chat requests for the authenticated user.
+            security:
+                - BearerAuth: []
+            responses:
+                "200":
+                    description: List of pending incoming requests
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/RequestsResponse"
+                "401":
+                    description: Unauthorized
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "403":
+                    description: Forbidden
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "500":
+                    description: Internal server error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+        post:
+            summary: Send Chat Request
+            description: Sends a new relationship/chat request to a target user with an optional initial message.
+            security:
+                - BearerAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/CreateRequestRequest"
+            responses:
+                "201":
+                    description: Request sent successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Request"
+                "400":
+                    description: Bad request (invalid target_user_id or self-request or message length > 500)
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "401":
+                    description: Unauthorized
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "403":
+                    description: Forbidden
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "409":
+                    description: Conflict (relationship or pending request already exists)
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "500":
+                    description: Internal server error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
+    /requests/{id}:
+        patch:
+            summary: Respond to Chat Request
+            description: Action on a pending chat request (`accept`, `reject`, or `block`). Authenticated user must be the target user of the request.
+            security:
+                - BearerAuth: []
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+                      format: uuid
+                  description: UUID of the relationship request
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/UpdateRequestRequest"
+            responses:
+                "200":
+                    description: Action performed successfully
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                                        example: Request accepted
+                                    chat_id:
+                                        type: string
+                                        format: uuid
+                                        description: Present when action is accept
+                "400":
+                    description: Bad request (invalid action or request not in pending status)
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "401":
+                    description: Unauthorized
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "403":
+                    description: Forbidden (user is not target of request)
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "404":
+                    description: Request not found
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+                "500":
+                    description: Internal server error
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/ErrorResponse"
+
     /ws:
         get:
             summary: Real-Time WebSocket Connection
@@ -976,6 +1168,9 @@ components:
                 id:
                     type: string
                     format: uuid
+                is_current:
+                    type: boolean
+                    example: true
                 created_at:
                     type: string
                     format: date-time
@@ -1068,3 +1263,88 @@ components:
                     items:
                         type: string
                         format: uuid
+
+        UserSearchResult:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                nickname:
+                    type: string
+                    example: bob
+                real_name:
+                    type: string
+                    example: Bob Smith
+
+        UsersSearchResponse:
+            type: object
+            properties:
+                users:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/UserSearchResult"
+
+        Request:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                sender_id:
+                    type: string
+                    format: uuid
+                sender_nickname:
+                    type: string
+                    example: bob
+                sender_real_name:
+                    type: string
+                    example: Bob Smith
+                target_user_id:
+                    type: string
+                    format: uuid
+                status:
+                    type: string
+                    example: pending
+                initial_message:
+                    type: string
+                    nullable: true
+                    example: Hey, let's chat!
+                created_at:
+                    type: string
+                    format: date-time
+                updated_at:
+                    type: string
+                    format: date-time
+
+        RequestsResponse:
+            type: object
+            properties:
+                requests:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/Request"
+
+        CreateRequestRequest:
+            type: object
+            required:
+                - target_user_id
+            properties:
+                target_user_id:
+                    type: string
+                    format: uuid
+                initial_message:
+                    type: string
+                    nullable: true
+                    example: Hey, let's connect!
+
+        UpdateRequestRequest:
+            type: object
+            required:
+                - action
+            properties:
+                action:
+                    type: string
+                    enum: [accept, reject, block]
+                    example: accept
+

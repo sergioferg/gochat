@@ -128,63 +128,93 @@ export default function ChatPage({ currentUser }) {
   };
 
   return (
-    <main className="page-container">
-      <div
-        className="user-status-summary"
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "12px",
-        }}
-      >
-        <div className={`ws-status-badge ${wsStatus}`}>
-          <span className="ws-dot" />
-          <span>
-            {wsStatus === "connected"
-              ? "WebSocket Real-Time Connected"
-              : wsStatus === "connecting"
-              ? "Connecting WS..."
-              : wsStatus === "reconnecting"
-              ? "Reconnecting WS..."
-              : "WebSocket Disconnected"}
-          </span>
+    <div className="chat-layout-container">
+      {/* Left Sidebar */}
+      <aside className="chat-sidebar">
+        <section className="sidebar-section">
+          <h3 className="sidebar-heading">Search Users</h3>
+          <div className="sidebar-placeholder">
+            <input
+              type="text"
+              placeholder="Search users..."
+              className="sidebar-search-input"
+              readOnly
+            />
+          </div>
+        </section>
+
+        <section className="sidebar-section">
+          <h3 className="sidebar-heading">Pending Requests</h3>
+          <div className="sidebar-placeholder">
+            <p className="placeholder-text">No pending requests</p>
+          </div>
+        </section>
+
+        <section className="sidebar-section">
+          <h3 className="sidebar-heading">My Chats</h3>
+          <div className="sidebar-placeholder">
+            <div className="chat-item active">
+              <div className="chat-item-avatar">G</div>
+              <div className="chat-item-info">
+                <span className="chat-item-name">General Chat</span>
+                <span className="chat-item-preview">Welcome to GoChat.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      {/* Right Main Panel */}
+      <main className="chat-main-panel">
+        <div className="user-status-summary">
+          <div className={`ws-status-badge ${wsStatus}`}>
+            <span className="ws-dot" />
+            <span>
+              {wsStatus === "connected"
+                ? "WebSocket Real-Time Connected"
+                : wsStatus === "connecting"
+                ? "Connecting WS..."
+                : wsStatus === "reconnecting"
+                ? "Reconnecting WS..."
+                : "WebSocket Disconnected"}
+            </span>
+          </div>
+
+          {currentUser && (
+            <div>
+              Logged in as <strong>{currentUser.nickname || currentUser.email}</strong>
+            </div>
+          )}
         </div>
 
-        {currentUser && (
-          <div>
-            Logged in as <strong>{currentUser.nickname || currentUser.email}</strong>
-          </div>
-        )}
-      </div>
+        <div className="chat-window">
+          {chatLog.map((msg) => (
+            <div key={msg.id} className={`message ${msg.sender}`}>
+              {msg.text}
+            </div>
+          ))}
+        </div>
 
-      <div className="chat-window">
-        {chatLog.map((msg) => (
-          <div key={msg.id} className={`message ${msg.sender}`}>
-            {msg.text}
-          </div>
-        ))}
-      </div>
-
-      <form onSubmit={handleSend} className="chat-input-area">
-        <input
-          type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type a message..."
-          disabled={sending}
-          autoFocus
-        />
-        <button
-          type="submit"
-          disabled={sending || !message.trim()}
-          className="btn-primary"
-          style={{ width: "auto" }}
-        >
-          {sending && <span className="spinner" />}
-          <span>{sending ? "Sending..." : "Send"}</span>
-        </button>
-      </form>
-    </main>
+        <form onSubmit={handleSend} className="chat-input-area">
+          <input
+            type="text"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Type a message..."
+            disabled={sending}
+            autoFocus
+          />
+          <button
+            type="submit"
+            disabled={sending || !message.trim()}
+            className="btn-primary"
+            style={{ width: "auto" }}
+          >
+            {sending && <span className="spinner" />}
+            <span>{sending ? "Sending..." : "Send"}</span>
+          </button>
+        </form>
+      </main>
+    </div>
   );
 }
