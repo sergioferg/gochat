@@ -62,6 +62,10 @@ func (api *API) HandlerUserUpdate(w http.ResponseWriter, r *http.Request) {
 			respond.WithError(w, http.StatusBadRequest, "Invalid date_of_birth format. Use YYYY-MM-DD", err)
 			return
 		}
+		if calculateAge(parsedDob) < 18 {
+			respond.WithError(w, http.StatusBadRequest, "You must be at least 18 years old to use GoChat.", nil)
+			return
+		}
 		birthDate = &parsedDob
 	}
 

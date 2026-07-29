@@ -77,6 +77,10 @@ func (api *API) HandlerUserCreate(w http.ResponseWriter, r *http.Request) {
 		respond.WithError(w, http.StatusBadRequest, "Invalid or missing date_of_birth format. Use YYYY-MM-DD", err)
 		return
 	}
+	if calculateAge(dob) < 18 {
+		respond.WithError(w, http.StatusBadRequest, "You must be at least 18 years old to use GoChat.", nil)
+		return
+	}
 
 	if valid, err := utils.IsValidAndTrustworthyEmail(params.Email); !valid || err != nil {
 		respond.WithError(w, http.StatusBadRequest, "Invalid email address or unsupported email provider.", err)

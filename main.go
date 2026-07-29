@@ -134,26 +134,27 @@ func main() {
 	mux.HandleFunc("GET /oauth/github/login", api.HandlerGitHubLogin)
 	mux.HandleFunc("GET /oauth/github/callback", api.HandlerGitHubCallback)
 
-	protectedChain := alice.New(api.AuthMiddleware)
+	authChain := alice.New(api.AuthMiddleware)
+	fullAccountChain := alice.New(api.AuthMiddleware, api.RequireCompletedProfile)
 
 	// Chat management
-	mux.Handle("GET /chats", protectedChain.ThenFunc(api.HandlerGetUserChats))
-	mux.Handle("POST /chats", protectedChain.ThenFunc(api.HandlerCreateChat))
-	mux.Handle("GET /chats/{id}/messages", protectedChain.ThenFunc(api.HandlerGetMessages))
+	mux.Handle("GET /chats", fullAccountChain.ThenFunc(api.HandlerGetUserChats))
+	mux.Handle("POST /chats", fullAccountChain.ThenFunc(api.HandlerCreateChat))
+	mux.Handle("GET /chats/{id}/messages", fullAccountChain.ThenFunc(api.HandlerGetMessages))
 
 	// Active session management
-	mux.Handle("GET /sessions", protectedChain.ThenFunc(api.HandlerGetSessions))
-	mux.Handle("DELETE /sessions/{id}", protectedChain.ThenFunc(api.HandlerRevokeSession))
+	mux.Handle("GET /sessions", authChain.ThenFunc(api.HandlerGetSessions))
+	mux.Handle("DELETE /sessions/{id}", authChain.ThenFunc(api.HandlerRevokeSession))
 
 	// Delete and Update users
-	mux.Handle("DELETE /users", protectedChain.ThenFunc(api.HandlerUserDelete))
-	mux.Handle("PATCH /users", protectedChain.ThenFunc(api.HandlerUserUpdate))
-	mux.Handle("GET /me", api.AuthMiddleware(http.HandlerFunc(api.HandlerGetMe)))
+	mux.Handle("DELETE /users", authChain.ThenFunc(api.HandlerUserDelete))
+	mux.Handle("PATCH /users", authChain.ThenFunc(api.HandlerUserUpdate))
+	mux.Handle("GET /me", authChain.ThenFunc(api.HandlerGetMe))
 
 	// Real-time connections / Messages
-	mux.Handle("GET /ws", protectedChain.ThenFunc(api.HandlerWebSocket))
-	mux.Handle("POST /messages", protectedChain.ThenFunc(api.HandlerSendMessage))
-	mux.Handle("PATCH /messages/{id}", protectedChain.ThenFunc(api.HandlerUpdateMessage))
+	mux.Handle("GET /ws", fullAccountChain.ThenFunc(api.HandlerWebSocket))
+	mux.Handle("POST /messages", fullAccountChain.ThenFunc(api.HandlerSendMessage))
+	mux.Handle("PATCH /messages/{id}", fullAccountChain.ThenFunc(api.HandlerUpdateMessage))
 
 	globalChain := alice.New(handlers.CORSMiddleware, api.SecurityHeadersMiddleware)
 
