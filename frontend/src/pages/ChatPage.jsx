@@ -37,6 +37,11 @@ export default function ChatPage({ currentUser }) {
   const [loadingChats, setLoadingChats] = useState(false);
   const [activeChatId, setActiveChatId] = useState("general");
 
+  const activeChatIdRef = useRef(activeChatId);
+  useEffect(() => {
+    activeChatIdRef.current = activeChatId;
+  }, [activeChatId]);
+
   const wsRef = useRef(null);
   const chatWindowRef = useRef(null);
 
@@ -220,9 +225,10 @@ export default function ChatPage({ currentUser }) {
           const payload = JSON.parse(event.data);
           if (payload.type === "new_message") {
             const isMe = payload.sender_id === currentUser?.id;
+            const currentActiveChatId = activeChatIdRef.current;
             const matchesActiveChat =
-              payload.chat_id === activeChatId ||
-              (activeChatId === "general" && !payload.chat_id);
+              payload.chat_id === currentActiveChatId ||
+              (currentActiveChatId === "general" && !payload.chat_id);
 
             if (matchesActiveChat) {
               setChatLog((prevLog) => {
@@ -284,7 +290,7 @@ export default function ChatPage({ currentUser }) {
         socket.close();
       }
     };
-  }, [currentUser?.id, activeChatId]);
+  }, [currentUser?.id]);
 
   const handleSend = async (e) => {
     e.preventDefault();
