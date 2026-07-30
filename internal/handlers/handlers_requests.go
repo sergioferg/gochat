@@ -11,7 +11,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/sergioferg/gochat/internal/database"
 	"github.com/sergioferg/gochat/internal/middleware"
+	"github.com/sergioferg/gochat/internal/pubsub"
 	"github.com/sergioferg/gochat/internal/respond"
+	"github.com/sergioferg/gochat/internal/routing"
+	"github.com/sirupsen/logrus"
 )
 
 type Request struct {
@@ -117,6 +120,15 @@ func (api *API) HandlerCreateRequest(w http.ResponseWriter, r *http.Request) {
 		}
 		respond.WithError(w, http.StatusInternalServerError, "Failed to send request", err)
 		return
+	}
+
+	event := routing.ChatEvent{
+		Type:          "new_request",
+		TargetUserIDs: []uuid.UUID{params.TargetUserID},
+	}
+	err = pubsub.PublishJSON(api.RMQ.Channel, routing.ChatPrefix, "", event)
+	if err != nil {
+		logrus.Errorf("Failed to publish new_request event to RabbitMQ: %v", err)
 	}
 
 	respond.WithJSON(w, http.StatusCreated, Request{

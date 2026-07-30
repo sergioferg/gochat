@@ -18,6 +18,8 @@ export default function ChatPage({ currentUser }) {
     { id: "sys-1", sender: "system", text: "Welcome to GoChat." },
   ]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
 
   // Search & Request states
   const [searchQuery, setSearchQuery] = useState("");
@@ -45,9 +47,14 @@ export default function ChatPage({ currentUser }) {
   const wsRef = useRef(null);
   const chatWindowRef = useRef(null);
   const inputRef = useRef(null);
+  const skipAutoScrollRef = useRef(false);
 
   // Auto scroll chat window to bottom when messages update
   useEffect(() => {
+    if (skipAutoScrollRef.current) {
+      skipAutoScrollRef.current = false;
+      return;
+    }
     if (chatWindowRef.current) {
       chatWindowRef.current.scrollTop = chatWindowRef.current.scrollHeight;
     }
@@ -89,6 +96,7 @@ export default function ChatPage({ currentUser }) {
 
   // Fetch Message History when activeChatId changes
   useEffect(() => {
+    setHasMoreMessages(true);
     if (!activeChatId || activeChatId === "general") {
       setChatLog([{ id: "sys-1", sender: "system", text: "Welcome to GoChat." }]);
       return;
@@ -269,6 +277,8 @@ export default function ChatPage({ currentUser }) {
 
             // Always update sidebar chat preview when a new message arrives
             loadChats();
+          } else if (payload.type === "new_request") {
+            loadRequests();
           }
         } catch (err) {
           console.error("Error parsing WebSocket message:", err);
@@ -302,6 +312,55 @@ export default function ChatPage({ currentUser }) {
       }
     };
   }, [currentUser?.id]);
+
+  const handleScroll = async (e) => {
+    const container = e.target;
+    if (
+      container.scrollTop === 0 &&
+      !loadingHistory &&
+      !loadingOlder &&
+      hasMoreMessages &&
+      activeChatId &&
+      activeChatId !== "general"
+    ) {
+      const oldestMsg = chatLog.find(
+        (m) => m.id && !String(m.id).startsWith("sys-") && !String(m.id).startsWith("temp-")
+      );
+      if (!oldestMsg) return;
+
+      setLoadingOlder(true);
+      const oldScrollHeight = container.scrollHeight;
+
+      try {
+        const olderMsgs = await fetchChatMessages(activeChatId, oldestMsg.id);
+        if (!olderMsgs || olderMsgs.length === 0) {
+          setHasMoreMessages(false);
+        } else {
+          const formatted = olderMsgs
+            .map((m) => ({
+              id: m.id,
+              sender: m.sender_id === currentUser?.id ? "me" : "them",
+              text: m.content,
+              createdAt: m.created_at,
+              chatId: m.chat_id,
+            }))
+            .reverse();
+
+          skipAutoScrollRef.current = true;
+          setChatLog((prev) => [...formatted, ...prev]);
+
+          requestAnimationFrame(() => {
+            const newScrollHeight = container.scrollHeight;
+            container.scrollTop = newScrollHeight - oldScrollHeight;
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load older messages:", err);
+      } finally {
+        setLoadingOlder(false);
+      }
+    }
+  };
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -578,7 +637,12 @@ export default function ChatPage({ currentUser }) {
           </div>
         </div>
 
-        <div className="chat-window" ref={chatWindowRef}>
+        <div className="chat-window" ref={chatWindowRef} onScroll={handleScroll}>
+          {loadingOlder && (
+            <div className="search-loading" style={{ padding: "8px 0", justifyContent: "center" }}>
+              <span className="spinner" /> <span>Loading older messages...</span>
+            </div>
+          )}
           {loadingHistory ? (
             <div className="search-loading" style={{ margin: "auto" }}>
               <span className="spinner-lg" />

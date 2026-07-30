@@ -177,8 +177,11 @@ export async function sendMessage(chatId, content) {
   });
 }
 
-export async function fetchChatMessages(chatId) {
-  const data = await request(`/chats/${chatId}/messages`, {
+export async function fetchChatMessages(chatId, beforeId = null) {
+  const url = beforeId
+    ? `/chats/${chatId}/messages?before_id=${encodeURIComponent(beforeId)}`
+    : `/chats/${chatId}/messages`;
+  const data = await request(url, {
     method: "GET",
   });
   return data?.messages || [];
