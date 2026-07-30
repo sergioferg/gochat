@@ -2,28 +2,32 @@
 
 A high-performance, real-time messaging application featuring a Go backend and a React/Vite frontend, structured as a monorepo.
 
-> ⚠️ **Important Note:** The backend is fully functional and deployed, but the frontend is currently a **work in progress (WIP)** and not yet ready for production use.
+🌐 **Live Demo:** [https://www.trygochat.tech](https://www.trygochat.tech)
+
+> 💡 **Note:** The backend is fully robust and deployed. The frontend is actively being developed and refined, but is fully functional and ready to be tested using the live link above!
 
 ---
 
 ## Description
 
-**GoChat** is a real-time chat application designed to provide reliable, low-latency communication across web clients. Built as a monorepo, it pairs an asynchronous Go backend with a modern React and Vite frontend interface.
+**GoChat** is a real-time chat application designed to provide reliable, low-latency communication across web clients. Built as a monorepo, it pairs an asynchronous Go backend with a modern React and Vite frontend interface, wrapped in a sleek, Telegram-style two-column layout.
 
-### Tech Stack & Features
+### Tech Stack & Core Features
 
-- **Go Backend:** Built using Go (Golang) with standard `net/http` routing for optimal performance, simplicity, and concurrency.
-- **Real-Time Communication:** WebSockets enable instant, bi-directional message transmission between clients and server.
-- **Message Delivery & Queuing:** Integrated **RabbitMQ** for reliable message delivery and asynchronous event handling.
-- **Robust Authentication:** Complete security layer supporting **JWT (JSON Web Tokens)**, standard **Email/Password** authentication, and **GitHub OAuth** integration.
-- **Frontend Engine:** Modern **React** web app built with **Vite** for fast module replacement and efficient builds.
-- **Containerization:** The backend is containerized using **Docker** for consistent runtime environments and simplified deployment.
+- **Go Backend:** Built using Go (Golang) utilizing standard `net/http` routing and `justinas/alice` for clean middleware chaining. Designed for optimal performance, simplicity, and concurrency.
+- **Database Layer:** **PostgreSQL** handles persistent relational data, utilizing **sqlc** for compiling SQL into fast, type-safe Go code.
+- **Real-Time Engine:** **WebSockets** enable instant, bi-directional message transmission, live incoming chat requests, and real-time presence/typing indicators.
+- **Message Broker:** Integrated **RabbitMQ** for reliable pub/sub message delivery, event deduplication, and asynchronous event handling.
+- **Robust Authentication:** Complete security layer supporting **JWT (JSON Web Tokens)**, standard **Email/Password** authentication, and **GitHub OAuth** integration (with automatic nickname collision handling).
+- **Social Graph & Privacy:** Full user relationship system allowing users to search by nickname, send chat requests, and accept, reject, or block users.
+- **Modern Frontend:** A **React** web app built with **Vite**, featuring infinite scrolling for message history and dynamic real-time state updates.
+- **Containerization:** The backend is containerized using a multi-stage **Docker** build (utilizing `distroless` for the final image) for a secure, minimal runtime footprint.
 
 ---
 
 ## Motivation
 
-The primary motivation behind **GoChat** is to explore and construct a highly scalable, real-time messaging system leveraging Go's native concurrency models (goroutines and channels), while establishing end-to-end modern CI/CD deployment pipelines and cloud infrastructure practices on Microsoft Azure.
+The primary motivation behind **GoChat** is to explore and construct a highly scalable, real-time messaging system leveraging Go's native concurrency models (goroutines and channels). It also serves as a practical implementation of end-to-end modern CI/CD deployment pipelines and cloud infrastructure practices on Microsoft Azure.
 
 ---
 
@@ -35,6 +39,8 @@ Follow these steps to set up and run GoChat in your local development environmen
 
 - [Go](https://go.dev/) (v1.20+ recommended) or [Docker](https://www.docker.com/)
 - [Node.js](https://nodejs.org/) & `npm`
+- **PostgreSQL** (Running locally or via Docker)
+- **RabbitMQ** (Running locally or via Docker)
 
 ### 1. Clone the Repository
 
@@ -45,7 +51,7 @@ cd gochat
 
 ### 2. Start the Go Backend
 
-You can run the backend directly using Go, or build and run it using Docker:
+You can run the backend directly using Go, or build and run it using Docker. _(Ensure your `.env` file is populated with your Postgres and RabbitMQ connection strings)._
 
 #### Option A: Running with Go
 
@@ -81,7 +87,7 @@ npm run dev
 GoChat is architected as a decoupled monorepo, with separate cloud deployment targets for backend and frontend services:
 
 - **Backend Deployment:** The containerized backend is deployed on **Azure App Service** behind a custom domain with automated SSL encryption via **App Service Managed Certificates**.
-- **Frontend Deployment:** Deployed using **Azure Static Web Apps** with automated **GitHub Actions** CI/CD pipelines and attached to its own custom root domain.
+- **Frontend Deployment:** Deployed using **Azure Static Web Apps** with automated **GitHub Actions** CI/CD pipelines and attached to its own custom root domain (`trygochat.tech`).
 - **Communication Protocol:** The frontend interacts with the Go backend via **CORS-enabled RESTful endpoints** for user management and authentication, and establishes long-lived **WebSocket** connections for instant message routing.
 
 ### API Documentation

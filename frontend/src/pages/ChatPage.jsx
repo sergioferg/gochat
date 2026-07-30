@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import {
   sendMessage,
   getWebSocketUrl,
@@ -20,6 +20,7 @@ export default function ChatPage({ currentUser }) {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
 
   // Search & Request states
   const [searchQuery, setSearchQuery] = useState("");
@@ -48,6 +49,29 @@ export default function ChatPage({ currentUser }) {
   const chatWindowRef = useRef(null);
   const inputRef = useRef(null);
   const skipAutoScrollRef = useRef(false);
+  const typingTimeoutRef = useRef(null);
+  const lastTypingSentRef = useRef(0);
+
+  const formatTime = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "";
+    return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  };
+
+  const formatDateLabel = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "";
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) return "Today";
+    if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+
+    return date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+  };
 
   // Auto scroll chat window to bottom when messages update
   useEffect(() => {
@@ -96,6 +120,8 @@ export default function ChatPage({ currentUser }) {
 
   // Fetch Message History when activeChatId changes
   useEffect(() => {
+    setIsTyping(false);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     setHasMoreMessages(true);
     if (!activeChatId || activeChatId === "general") {
       setChatLog([{ id: "sys-1", sender: "system", text: "Welcome to GoChat." }]);
@@ -106,6 +132,11 @@ export default function ChatPage({ currentUser }) {
       setLoadingHistory(true);
       try {
         const msgs = await fetchChatMessages(activeChatId);
+        if (!msgs || msgs.length < 50) {
+          setHasMoreMessages(false);
+        } else {
+          setHasMoreMessages(true);
+        }
         const formatted = msgs.map((m) => ({
           id: m.id,
           sender: m.sender_id === currentUser?.id ? "me" : "them",
@@ -270,6 +301,7 @@ export default function ChatPage({ currentUser }) {
                     sender: isMe ? "me" : "them",
                     text: payload.content,
                     chatId: payload.chat_id,
+                    createdAt: payload.created_at || new Date().toISOString(),
                   },
                 ];
               });
@@ -279,6 +311,18 @@ export default function ChatPage({ currentUser }) {
             loadChats();
           } else if (payload.type === "new_request") {
             loadRequests();
+          } else if (payload.type === "typing") {
+            const currentActiveChatId = activeChatIdRef.current;
+            if (
+              payload.chat_id === currentActiveChatId &&
+              payload.sender_id !== currentUser?.id
+            ) {
+              setIsTyping(true);
+              if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+              typingTimeoutRef.current = setTimeout(() => {
+                setIsTyping(false);
+              }, 3000);
+            }
           }
         } catch (err) {
           console.error("Error parsing WebSocket message:", err);
@@ -336,6 +380,9 @@ export default function ChatPage({ currentUser }) {
         if (!olderMsgs || olderMsgs.length === 0) {
           setHasMoreMessages(false);
         } else {
+          if (olderMsgs.length < 50) {
+            setHasMoreMessages(false);
+          }
           const formatted = olderMsgs
             .map((m) => ({
               id: m.id,
@@ -362,6 +409,19 @@ export default function ChatPage({ currentUser }) {
     }
   };
 
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setMessage(val);
+
+    if (val.trim() && wsStatus === "connected" && wsRef.current) {
+      const now = Date.now();
+      if (now - lastTypingSentRef.current > 2000) {
+        wsRef.current.send(JSON.stringify({ type: "typing", chat_id: activeChatId }));
+        lastTypingSentRef.current = now;
+      }
+    }
+  };
+
   const handleSend = async (e) => {
     e.preventDefault();
     if (!message.trim() || sending) return;
@@ -371,7 +431,7 @@ export default function ChatPage({ currentUser }) {
 
     setChatLog((prevLog) => [
       ...prevLog,
-      { id: tempId, sender: "me", text: userMessage, pending: true },
+      { id: tempId, sender: "me", text: userMessage, pending: true, createdAt: new Date().toISOString() },
     ]);
     setMessage("");
     setSending(true);
@@ -652,20 +712,41 @@ export default function ChatPage({ currentUser }) {
               No messages yet. Send a message to start chatting!
             </p>
           ) : (
-            chatLog.map((msg) => (
-              <div key={msg.id} className={`message ${msg.sender}`}>
-                {msg.text}
-              </div>
-            ))
+            chatLog.map((msg, index) => {
+              const currentLabel = msg.createdAt ? formatDateLabel(msg.createdAt) : null;
+              const previousLabel =
+                index > 0 && chatLog[index - 1].createdAt
+                  ? formatDateLabel(chatLog[index - 1].createdAt)
+                  : null;
+              const showSeparator = currentLabel && currentLabel !== previousLabel;
+
+              return (
+                <Fragment key={msg.id}>
+                  {showSeparator && <div className="date-separator">{currentLabel}</div>}
+                  <div className={`message ${msg.sender}`}>
+                    <div className="message-content">{msg.text}</div>
+                    {msg.createdAt && (
+                      <div className="message-time">{formatTime(msg.createdAt)}</div>
+                    )}
+                  </div>
+                </Fragment>
+              );
+            })
           )}
         </div>
+
+        {isTyping && (
+          <div className="typing-indicator">
+            <span className="spinner" /> <span>Someone is typing...</span>
+          </div>
+        )}
 
         <form onSubmit={handleSend} className="chat-input-area">
           <input
             ref={inputRef}
             type="text"
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={handleInputChange}
             placeholder="Type a message..."
             autoFocus
           />

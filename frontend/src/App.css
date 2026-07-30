@@ -1049,6 +1049,40 @@
   color: var(--color-text-heading);
 }
 
+.date-separator {
+  align-self: center;
+  background-color: var(--color-bg);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  padding: 2px 12px;
+  border-radius: 12px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  margin: var(--space-2) 0;
+}
+
+.message-content {
+  word-wrap: break-word;
+}
+
+.message-time {
+  font-size: 0.65rem;
+  opacity: 0.75;
+  margin-top: 4px;
+  text-align: right;
+  line-height: 1;
+}
+
+.typing-indicator {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin-bottom: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .ws-status-badge {
   display: inline-flex;
   align-items: center;

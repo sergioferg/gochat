@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/sergioferg/gochat/internal/middleware"
+	"github.com/sergioferg/gochat/internal/pubsub"
 	"github.com/sergioferg/gochat/internal/respond"
+	"github.com/sergioferg/gochat/internal/routing"
 	"github.com/sergioferg/gochat/internal/ws"
 	"github.com/sirupsen/logrus"
 )
@@ -48,11 +51,9 @@ func (api *API) HandlerWebSocket(w http.ResponseWriter, r *http.Request) {
 		conn.Close()
 	}()
 
-	// We MUST continuously read from the connection. Even if the client only
-	// receives messages and never sends them, reading processes internal ping/pong
-	// frames and detects when the user closes their laptop or loses internet.
+	// We MUST continuously read from the connection.
 	for {
-		_, _, err := conn.ReadMessage()
+		_, rawMsg, err := conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				logrus.Error("WebSocket error:", err)
@@ -60,7 +61,26 @@ func (api *API) HandlerWebSocket(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		// Note: In this architecture, clients send messages via standard POST /api/messages,
-		// so we just ignore any incoming WS data here. We strictly use WS for pushing down.
+		var payload struct {
+			Type   string    `json:"type"`
+			ChatID uuid.UUID `json:"chat_id,omitempty"`
+		}
+
+		if err := json.Unmarshal(rawMsg, &payload); err == nil {
+			if payload.Type == "typing" && payload.ChatID != uuid.Nil {
+				targetIDs, dbErr := api.DB.GetChatParticipantIDs(r.Context(), payload.ChatID)
+				if dbErr == nil {
+					event := routing.ChatEvent{
+						Type:          "typing",
+						ChatID:        payload.ChatID,
+						SenderID:      userID,
+						TargetUserIDs: targetIDs,
+					}
+					if pubErr := pubsub.PublishJSON(api.RMQ.Channel, routing.ChatPrefix, "", event); pubErr != nil {
+						logrus.Warn("Failed to publish typing event:", pubErr)
+					}
+				}
+			}
+		}
 	}
 }
