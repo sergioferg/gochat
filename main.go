@@ -115,10 +115,8 @@ func main() {
 		"", // Empty routing key
 		pubsub.Transient,
 		func(event routing.ChatEvent) pubsub.AckType {
-			if event.Type == "new_message" {
-				for _, userID := range event.TargetUserIDs {
-					api.WSManager.SendToUser(userID, event)
-				}
+			for _, userID := range event.TargetUserIDs {
+				api.WSManager.SendToUser(userID, event)
 			}
 			return pubsub.Ack
 		},

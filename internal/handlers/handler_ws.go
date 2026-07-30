@@ -62,22 +62,27 @@ func (api *API) HandlerWebSocket(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var payload struct {
-			Type   string    `json:"type"`
-			ChatID uuid.UUID `json:"chat_id,omitempty"`
+			Type   string `json:"type"`
+			ChatID string `json:"chat_id"`
 		}
 
 		if err := json.Unmarshal(rawMsg, &payload); err == nil {
-			if payload.Type == "typing" && payload.ChatID != uuid.Nil {
-				targetIDs, dbErr := api.DB.GetChatParticipantIDs(r.Context(), payload.ChatID)
-				if dbErr == nil {
-					event := routing.ChatEvent{
-						Type:          "typing",
-						ChatID:        payload.ChatID,
-						SenderID:      userID,
-						TargetUserIDs: targetIDs,
-					}
-					if pubErr := pubsub.PublishJSON(api.RMQ.Channel, routing.ChatPrefix, "", event); pubErr != nil {
-						logrus.Warn("Failed to publish typing event:", pubErr)
+			if payload.Type == "typing" && payload.ChatID != "" {
+				logrus.Infof("Received typing event for chat: %s", payload.ChatID)
+
+				chatID, parseErr := uuid.Parse(payload.ChatID)
+				if parseErr == nil {
+					targetIDs, dbErr := api.DB.GetChatParticipantIDs(r.Context(), chatID)
+					if dbErr == nil {
+						event := routing.ChatEvent{
+							Type:          "typing",
+							ChatID:        chatID,
+							SenderID:      userID,
+							TargetUserIDs: targetIDs,
+						}
+						if pubErr := pubsub.PublishJSON(api.RMQ.Channel, routing.ChatPrefix, "", event); pubErr != nil {
+							logrus.Warn("Failed to publish typing event:", pubErr)
+						}
 					}
 				}
 			}
