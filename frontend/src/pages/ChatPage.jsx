@@ -44,6 +44,7 @@ export default function ChatPage({ currentUser }) {
 
   const wsRef = useRef(null);
   const chatWindowRef = useRef(null);
+  const inputRef = useRef(null);
 
   // Auto scroll chat window to bottom when messages update
   useEffect(() => {
@@ -103,7 +104,7 @@ export default function ChatPage({ currentUser }) {
           text: m.content,
           createdAt: m.created_at,
           chatId: m.chat_id,
-        }));
+        })).reverse();
         setChatLog(formatted);
       } catch (err) {
         console.error("Failed to load chat history:", err);
@@ -330,12 +331,28 @@ export default function ChatPage({ currentUser }) {
       ]);
     } finally {
       setSending(false);
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 0);
     }
   };
 
   const activeChat = activeChatId && activeChatId !== "general"
     ? myChats.find((c) => c.id === activeChatId)
     : null;
+
+  const getChatDisplayName = (chat) => {
+    if (!chat) return "";
+    if (chat.name) return chat.name;
+    if (chat.is_group) return "Group Chat";
+    if (chat.participants && Array.isArray(chat.participants)) {
+      const other = chat.participants.find((p) => p.id !== currentUser?.id);
+      if (other) {
+        return other.nickname || other.real_name || "Direct Chat";
+      }
+    }
+    return "Direct Chat";
+  };
 
   return (
     <div className="chat-layout-container">
@@ -506,7 +523,7 @@ export default function ChatPage({ currentUser }) {
 
             {myChats.map((chat) => {
               const isSelected = activeChatId === chat.id;
-              const chatName = chat.name || "Direct Chat";
+              const chatName = getChatDisplayName(chat);
               const preview = chat.last_message_content || "No messages yet";
               const initial = chatName.charAt(0).toUpperCase();
 
@@ -546,7 +563,11 @@ export default function ChatPage({ currentUser }) {
 
           <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
             <div>
-              Active Chat: <strong>{activeChat?.name || (activeChatId === "general" || !activeChatId ? "General Chat" : "Direct Chat")}</strong>
+              Active Chat: <strong>
+                {!activeChatId || activeChatId === "general"
+                  ? "General Chat"
+                  : getChatDisplayName(activeChat)}
+              </strong>
             </div>
 
             {currentUser && (
@@ -577,11 +598,11 @@ export default function ChatPage({ currentUser }) {
 
         <form onSubmit={handleSend} className="chat-input-area">
           <input
+            ref={inputRef}
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Type a message..."
-            disabled={sending}
             autoFocus
           />
           <button

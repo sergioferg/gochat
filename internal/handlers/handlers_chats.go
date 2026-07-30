@@ -102,12 +102,19 @@ func (api *API) HandlerCreateChat(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type ChatParticipant struct {
+	ID       uuid.UUID `json:"id"`
+	Nickname string    `json:"nickname"`
+	RealName string    `json:"real_name"`
+}
+
 func (api *API) HandlerGetUserChats(w http.ResponseWriter, r *http.Request) {
 	type response struct {
 		Chat
-		LastReadAt         time.Time  `json:"last_read_at"`
-		LastMessageContent *string    `json:"last_message_content"`
-		LastMessageID      *uuid.UUID `json:"last_message_id"`
+		LastReadAt         time.Time         `json:"last_read_at"`
+		LastMessageContent *string           `json:"last_message_content"`
+		LastMessageID      *uuid.UUID        `json:"last_message_id"`
+		Participants       []ChatParticipant `json:"participants"`
 	}
 
 	userID, ok := r.Context().Value(middleware.UserIDContextKey).(uuid.UUID)
@@ -142,6 +149,18 @@ func (api *API) HandlerGetUserChats(w http.ResponseWriter, r *http.Request) {
 			lastMsgID = &id
 		}
 
+		dbParticipants, err := api.DB.GetChatParticipantsDetails(r.Context(), dbRow.ChatID)
+		participants := make([]ChatParticipant, 0)
+		if err == nil {
+			for _, p := range dbParticipants {
+				participants = append(participants, ChatParticipant{
+					ID:       p.ID,
+					Nickname: p.Nickname,
+					RealName: p.RealName,
+				})
+			}
+		}
+
 		responses = append(responses, response{
 			Chat: Chat{
 				ID:      dbRow.ChatID,
@@ -151,6 +170,7 @@ func (api *API) HandlerGetUserChats(w http.ResponseWriter, r *http.Request) {
 			LastReadAt:         dbRow.LastReadAt,
 			LastMessageContent: lastContent,
 			LastMessageID:      lastMsgID,
+			Participants:       participants,
 		})
 	}
 

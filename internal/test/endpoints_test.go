@@ -15,6 +15,7 @@ import (
 	"github.com/sergioferg/gochat/internal/auth"
 	"github.com/sergioferg/gochat/internal/database"
 	"github.com/sergioferg/gochat/internal/handlers"
+	"github.com/sergioferg/gochat/internal/middleware"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -38,7 +39,11 @@ func setupTestServer(t *testing.T, dbQueries *database.Queries, pool *pgxpool.Po
 	mux.HandleFunc("POST /api/users", api.HandlerUserCreate)
 	mux.HandleFunc("POST /api/verify", api.HandlerUserVerify)
 
-	protectedChain := alice.New(api.AuthMiddleware)
+	middlewareConfig := middleware.Config{
+		DB:     dbQueries,
+		Secret: testSecret,
+	}
+	protectedChain := alice.New(middlewareConfig.AuthMiddleware)
 	mux.Handle("GET /api/chats", protectedChain.ThenFunc(api.HandlerGetUserChats))
 	mux.Handle("POST /api/chats", protectedChain.ThenFunc(api.HandlerCreateChat))
 	mux.Handle("GET /api/chats/{id}/messages", protectedChain.ThenFunc(api.HandlerGetMessages))

@@ -2,7 +2,7 @@
 SELECT * FROM messages
 WHERE chat_id = $1
     AND id < $2
-ORDER BY id ASC
+ORDER BY id DESC
 LIMIT 50;
 --
 
@@ -34,6 +34,6 @@ WHERE id = $1;
 -- name: GetRecentMessages :many
 SELECT * FROM messages
 WHERE chat_id = $1
-ORDER BY id ASC
+ORDER BY id DESC
 LIMIT 50;
 --

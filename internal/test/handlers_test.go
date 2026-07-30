@@ -19,6 +19,7 @@ import (
 	"github.com/sergioferg/gochat/internal/auth"
 	"github.com/sergioferg/gochat/internal/database"
 	"github.com/sergioferg/gochat/internal/handlers"
+	"github.com/sergioferg/gochat/internal/middleware"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -378,7 +379,7 @@ func TestHandlerGetMessages(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodGet, "/api/chats/"+tt.chatIDPath+"/messages"+tt.queryParams, nil)
 			if tt.includeAuthCtx {
-				ctx := context.WithValue(req.Context(), handlers.UserIDContextKey, tt.authUserID)
+				ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, tt.authUserID)
 				req = req.WithContext(ctx)
 			}
 
@@ -562,7 +563,7 @@ func TestHandlerUpdateMessage(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPatch, "/api/messages/"+tt.messageIDPath, bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
 			if tt.includeAuthCtx {
-				ctx := context.WithValue(req.Context(), handlers.UserIDContextKey, tt.authUserID)
+				ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, tt.authUserID)
 				req = req.WithContext(ctx)
 			}
 
@@ -665,7 +666,7 @@ func TestHandlerGetUserChats(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodGet, "/api/chats", nil)
 			if tt.includeAuthCtx {
-				ctx := context.WithValue(req.Context(), handlers.UserIDContextKey, tt.authUserID)
+				ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, tt.authUserID)
 				req = req.WithContext(ctx)
 			}
 
@@ -790,7 +791,7 @@ func TestHandlerCreateChat(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/api/chats", bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
 			if tt.includeAuthCtx {
-				ctx := context.WithValue(req.Context(), handlers.UserIDContextKey, tt.authUserID)
+				ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, tt.authUserID)
 				req = req.WithContext(ctx)
 			}
 
@@ -842,7 +843,7 @@ func TestHandlerSendMessage(t *testing.T) {
 		},
 		{
 			name:           "500 Internal Server Error - database error creating message",
-			body:           `{"chat_id":"` + chatID.String() + `","message":"Error test"}`,
+			body:           `{"chat_id":"` + chatID.String() + `","content":"Error test"}`,
 			includeAuthCtx: true,
 			authUserID:     userID,
 			mockSetup: func(m *MockDBTX) {
@@ -861,7 +862,7 @@ func TestHandlerSendMessage(t *testing.T) {
 		},
 		{
 			name:           "500 Internal Server Error - database error fetching chat participants",
-			body:           `{"chat_id":"` + chatID.String() + `","message":"Error test"}`,
+			body:           `{"chat_id":"` + chatID.String() + `","content":"Error test"}`,
 			includeAuthCtx: true,
 			authUserID:     userID,
 			mockSetup: func(m *MockDBTX) {
@@ -897,7 +898,7 @@ func TestHandlerSendMessage(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/api/messages", bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
 			if tt.includeAuthCtx {
-				ctx := context.WithValue(req.Context(), handlers.UserIDContextKey, tt.authUserID)
+				ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, tt.authUserID)
 				req = req.WithContext(ctx)
 			}
 
@@ -934,7 +935,7 @@ func TestHandlerGetSessions(t *testing.T) {
 				m.QueryFunc = func(ctx context.Context, query string, args ...any) (pgx.Rows, error) {
 					return &mockRows{
 						rows: [][]any{
-							{sessionID, now, "Mozilla/5.0", "127.0.0.1"},
+							{sessionID, "dummyHash", now, "Mozilla/5.0", "127.0.0.1"},
 						},
 					}, nil
 				}
@@ -997,7 +998,7 @@ func TestHandlerGetSessions(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodGet, "/api/sessions", nil)
 			if tt.includeAuthCtx {
-				ctx := context.WithValue(req.Context(), handlers.UserIDContextKey, tt.authUserID)
+				ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, tt.authUserID)
 				req = req.WithContext(ctx)
 			}
 
@@ -1091,7 +1092,7 @@ func TestHandlerRevokeSession(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodDelete, "/api/sessions/"+tt.sessionIDPath, nil)
 			if tt.includeAuthCtx {
-				ctx := context.WithValue(req.Context(), handlers.UserIDContextKey, tt.authUserID)
+				ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, tt.authUserID)
 				req = req.WithContext(ctx)
 			}
 
@@ -1126,7 +1127,8 @@ func TestHandlerUserCreate(t *testing.T) {
 			mockSetup: func(m *MockDBTX) {
 				m.QueryRowFunc = func(ctx context.Context, query string, args ...any) pgx.Row {
 					if strings.Contains(query, "INSERT INTO users") {
-						return newMockRow(userID, "alice", "Alice Smith", now, "alice@example.com", hashedPwPtr, "unverified", now, now, pgtype.Timestamptz{Valid: false})
+						dob := time.Date(1995, 5, 15, 0, 0, 0, 0, time.UTC)
+						return newMockRow(userID, "alice", "Alice Smith", &dob, "alice@example.com", hashedPwPtr, "unverified", now, now, pgtype.Timestamptz{Valid: false})
 					}
 					if strings.Contains(query, "INSERT INTO email_verification_tokens") {
 						return newMockRow("hashedtoken", userID, now, now.Add(24*time.Hour))
@@ -1228,7 +1230,7 @@ func TestHandlerUserLogin(t *testing.T) {
 			mockSetup: func(m *MockDBTX) {
 				m.QueryRowFunc = func(ctx context.Context, query string, args ...any) pgx.Row {
 					if strings.Contains(query, "SELECT id, nickname, email") {
-						return newMockRow(userID, "alice", "alice@example.com", hashedPwPtr, "active", now, now, pgtype.Timestamptz{Valid: false})
+						return newMockRow(userID, "alice", "Alice", (*time.Time)(nil), "alice@example.com", hashedPwPtr, "active", now, now, pgtype.Timestamptz{Valid: false})
 					}
 					if strings.Contains(query, "INSERT INTO sessions") {
 						sessID := uuid.New()
@@ -1280,7 +1282,7 @@ func TestHandlerUserLogin(t *testing.T) {
 			body: `{"email":"unverified@example.com","password":"Password123!"}`,
 			mockSetup: func(m *MockDBTX) {
 				m.QueryRowFunc = func(ctx context.Context, query string, args ...any) pgx.Row {
-					return newMockRow(userID, "unverified_user", "unverified@example.com", hashedPwPtr, "unverified", now, now, pgtype.Timestamptz{Valid: false})
+					return newMockRow(userID, "unverified_user", "Unverified", (*time.Time)(nil), "unverified@example.com", hashedPwPtr, "unverified", now, now, pgtype.Timestamptz{Valid: false})
 				}
 			},
 			wantStatus: http.StatusUnauthorized,
@@ -1293,7 +1295,7 @@ func TestHandlerUserLogin(t *testing.T) {
 			body: `{"email":"alice@example.com","password":"WrongPassword!"}`,
 			mockSetup: func(m *MockDBTX) {
 				m.QueryRowFunc = func(ctx context.Context, query string, args ...any) pgx.Row {
-					return newMockRow(userID, "alice", "alice@example.com", hashedPwPtr, "active", now, now, pgtype.Timestamptz{Valid: false})
+					return newMockRow(userID, "alice", "Alice", (*time.Time)(nil), "alice@example.com", hashedPwPtr, "active", now, now, pgtype.Timestamptz{Valid: false})
 				}
 			},
 			wantStatus: http.StatusUnauthorized,
@@ -1352,7 +1354,7 @@ func TestHandlerUserVerify(t *testing.T) {
 			body: `{"token":"valid-token-string"}`,
 			mockSetup: func(m *MockDBTX) {
 				m.QueryRowFunc = func(ctx context.Context, query string, args ...any) pgx.Row {
-					return newMockRow(userID, "alice", "alice@example.com", hashedPwPtr, "unverified", now, now, pgtype.Timestamptz{Valid: false})
+					return newMockRow(userID, "alice", "Alice", (*time.Time)(nil), "alice@example.com", hashedPwPtr, "unverified", now, now, pgtype.Timestamptz{Valid: false})
 				}
 				m.ExecFunc = func(ctx context.Context, query string, args ...any) (pgconn.CommandTag, error) {
 					return pgconn.CommandTag{}, nil
@@ -1506,7 +1508,7 @@ func TestHandlerRefreshAccessToken(t *testing.T) {
 			cookie: &http.Cookie{Name: "refresh_token", Value: "valid_refresh_token_cookie"},
 			mockSetup: func(m *MockDBTX) {
 				m.QueryRowFunc = func(ctx context.Context, query string, args ...any) pgx.Row {
-					return newMockRow(userID, "alice", "alice@example.com", hashedPwPtr, "active", now, now, pgtype.Timestamptz{Valid: false})
+					return newMockRow(userID, "alice", "Alice", (*time.Time)(nil), "alice@example.com", hashedPwPtr, "active", now, now, pgtype.Timestamptz{Valid: false})
 				}
 			},
 			wantStatus: http.StatusOK,
@@ -1602,7 +1604,7 @@ func TestHandlerUserUpdate(t *testing.T) {
 			authUserID:     userID,
 			mockSetup: func(m *MockDBTX) {
 				m.QueryRowFunc = func(ctx context.Context, query string, args ...any) pgx.Row {
-					return newMockRow(userID, "alice_new", "Alice Smith", now, "alice@example.com", hashedPwPtr, "active", now, now, pgtype.Timestamptz{Valid: false})
+					return newMockRow(userID, "alice_new", "Alice Smith", (*time.Time)(nil), "alice@example.com", hashedPwPtr, "active", now, now, pgtype.Timestamptz{Valid: false})
 				}
 			},
 			wantStatus: http.StatusOK,
@@ -1671,7 +1673,7 @@ func TestHandlerUserUpdate(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPatch, "/api/users", bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
 			if tt.includeAuthCtx {
-				ctx := context.WithValue(req.Context(), handlers.UserIDContextKey, tt.authUserID)
+				ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, tt.authUserID)
 				req = req.WithContext(ctx)
 			}
 

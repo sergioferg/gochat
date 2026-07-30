@@ -13,3 +13,10 @@ WHERE chat_id = $1 AND user_id = $2;
 SELECT user_id FROM chat_participants
 WHERE chat_id = $1;
 --
+
+-- name: GetChatParticipantsDetails :many
+SELECT u.id, u.nickname, u.real_name
+FROM users u
+JOIN chat_participants cp ON u.id = cp.user_id
+WHERE cp.chat_id = $1;
+--

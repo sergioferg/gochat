@@ -52,6 +52,40 @@ func (q *Queries) GetChatParticipantIDs(ctx context.Context, chatID uuid.UUID) (
 	return items, nil
 }
 
+const getChatParticipantsDetails = `-- name: GetChatParticipantsDetails :many
+
+SELECT u.id, u.nickname, u.real_name
+FROM users u
+JOIN chat_participants cp ON u.id = cp.user_id
+WHERE cp.chat_id = $1
+`
+
+type GetChatParticipantsDetailsRow struct {
+	ID       uuid.UUID
+	Nickname string
+	RealName string
+}
+
+func (q *Queries) GetChatParticipantsDetails(ctx context.Context, chatID uuid.UUID) ([]GetChatParticipantsDetailsRow, error) {
+	rows, err := q.db.Query(ctx, getChatParticipantsDetails, chatID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetChatParticipantsDetailsRow
+	for rows.Next() {
+		var i GetChatParticipantsDetailsRow
+		if err := rows.Scan(&i.ID, &i.Nickname, &i.RealName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateLastRead = `-- name: UpdateLastRead :exec
 
 UPDATE chat_participants
