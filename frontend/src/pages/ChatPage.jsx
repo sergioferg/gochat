@@ -416,8 +416,17 @@ export default function ChatPage({ currentUser }) {
     if (val.trim() && wsStatus === "connected" && wsRef.current) {
       const now = Date.now();
       if (now - lastTypingSentRef.current > 2000) {
-        wsRef.current.send(JSON.stringify({ type: "typing", chat_id: activeChatId }));
-        lastTypingSentRef.current = now;
+        console.log("Sending typing event...", { type: "typing", chat_id: activeChatId });
+        try {
+          if (wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({ type: "typing", chat_id: activeChatId }));
+            lastTypingSentRef.current = now;
+          } else {
+            console.log("WebSocket not open. ReadyState:", wsRef.current.readyState);
+          }
+        } catch (err) {
+          console.error("Failed to send typing event", err);
+        }
       }
     }
   };
@@ -723,8 +732,10 @@ export default function ChatPage({ currentUser }) {
               return (
                 <Fragment key={msg.id}>
                   {showSeparator && <div className="date-separator">{currentLabel}</div>}
-                  <div className={`message ${msg.sender}`}>
-                    <div className="message-content">{msg.text}</div>
+                  <div className={`message-wrapper ${msg.sender}`}>
+                    <div className={`message ${msg.sender}`}>
+                      <div className="message-content">{msg.text}</div>
+                    </div>
                     {msg.createdAt && (
                       <div className="message-time">{formatTime(msg.createdAt)}</div>
                     )}
