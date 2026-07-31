@@ -362,7 +362,7 @@ func (api *API) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteNoneMode,
 		MaxAge:   60 * 60 * 24 * 60, // 60 days (same as db duration)
 	})
 
@@ -816,7 +816,7 @@ func (api *API) HandlerGitHubCallback(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteNoneMode,
 		MaxAge:   60 * 60 * 24 * 60, // 60 days (same as db duration)
 	})
 

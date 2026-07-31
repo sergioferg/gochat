@@ -8,6 +8,7 @@ import {
   updateRequestAction,
   fetchUserChats,
   fetchChatMessages,
+  refreshToken,
 } from "../api";
 
 export default function ChatPage({ currentUser }) {
@@ -243,6 +244,8 @@ export default function ChatPage({ currentUser }) {
   useEffect(() => {
     let socket = null;
     let reconnectTimer = null;
+    let pingTimer = null;
+    let reconnectAttempts = 0;
     let isMounted = true;
 
     function connect() {
@@ -254,9 +257,16 @@ export default function ChatPage({ currentUser }) {
       wsRef.current = socket;
 
       socket.onopen = () => {
-        if (isMounted) {
-          setWsStatus("connected");
-        }
+        if (!isMounted) return;
+        setWsStatus("connected");
+        reconnectAttempts = 0;
+
+        if (pingTimer) clearInterval(pingTimer);
+        pingTimer = setInterval(() => {
+          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({ type: "ping" }));
+          }
+        }, 30000);
       };
 
       socket.onmessage = (event) => {
@@ -329,16 +339,28 @@ export default function ChatPage({ currentUser }) {
         }
       };
 
-      socket.onclose = () => {
-        if (isMounted) {
-          setWsStatus("disconnected");
-          reconnectTimer = setTimeout(() => {
-            if (isMounted) {
-              setWsStatus("reconnecting");
-              connect();
-            }
-          }, 3000);
+      socket.onclose = async () => {
+        if (pingTimer) clearInterval(pingTimer);
+        if (!isMounted) return;
+        setWsStatus("disconnected");
+
+        try {
+          await refreshToken();
+        } catch (err) {
+          console.warn("Token refresh failed during WS disconnect recovery:", err);
         }
+
+        if (!isMounted) return;
+
+        const delay = Math.min(30000, Math.pow(2, reconnectAttempts) * 1000);
+        reconnectAttempts++;
+
+        reconnectTimer = setTimeout(() => {
+          if (isMounted) {
+            setWsStatus("reconnecting");
+            connect();
+          }
+        }, delay);
       };
 
       socket.onerror = (err) => {
@@ -350,6 +372,7 @@ export default function ChatPage({ currentUser }) {
 
     return () => {
       isMounted = false;
+      if (pingTimer) clearInterval(pingTimer);
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (socket) {
         socket.close();
@@ -744,13 +767,12 @@ export default function ChatPage({ currentUser }) {
               );
             })
           )}
+          {isTyping && (
+            <div className="typing-indicator">
+              <span className="spinner" /> <span>Someone is typing...</span>
+            </div>
+          )}
         </div>
-
-        {isTyping && (
-          <div className="typing-indicator">
-            <span className="spinner" /> <span>Someone is typing...</span>
-          </div>
-        )}
 
         <form onSubmit={handleSend} className="chat-input-area">
           <input

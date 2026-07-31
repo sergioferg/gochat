@@ -20,6 +20,7 @@ import (
 	"github.com/sergioferg/gochat/internal/middleware"
 	"github.com/sergioferg/gochat/internal/pubsub"
 	"github.com/sergioferg/gochat/internal/routing"
+	"github.com/sergioferg/gochat/internal/routes"
 	"github.com/sergioferg/gochat/internal/ws"
 	"github.com/sirupsen/logrus"
 )
@@ -125,48 +126,14 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", handlers.HandlerEndpoint)
 
-	// Refresh JWT
-	mux.HandleFunc("POST /refresh", api.HandlerRefreshAccessToken)
-
-	// User auth
-	mux.HandleFunc("POST /login", api.HandlerUserLogin)
-	mux.HandleFunc("POST /users", api.HandlerUserCreate)
-	mux.HandleFunc("POST /verify", api.HandlerUserVerify)
-
-	// Session termination
-	mux.HandleFunc("POST /logout", api.HandlerUserLogout)
-
-	// Github auth/session
-	mux.HandleFunc("GET /oauth/github/login", api.HandlerGitHubLogin)
-	mux.HandleFunc("GET /oauth/github/callback", api.HandlerGitHubCallback)
-
 	authChain := alice.New(mw.AuthMiddleware)
 	fullAccountChain := alice.New(mw.AuthMiddleware, mw.RequireCompletedProfile)
 
-	// Chat management
-	mux.Handle("GET /chats", fullAccountChain.ThenFunc(api.HandlerGetUserChats))
-	mux.Handle("POST /chats", fullAccountChain.ThenFunc(api.HandlerCreateChat))
-	mux.Handle("GET /chats/{id}/messages", fullAccountChain.ThenFunc(api.HandlerGetMessages))
-
-	// Active session management
-	mux.Handle("GET /sessions", authChain.ThenFunc(api.HandlerGetSessions))
-	mux.Handle("DELETE /sessions/{id}", authChain.ThenFunc(api.HandlerRevokeSession))
-
-	// Delete and Update users
-	mux.Handle("DELETE /users", authChain.ThenFunc(api.HandlerUserDelete))
-	mux.Handle("PATCH /users", authChain.ThenFunc(api.HandlerUserUpdate))
-	mux.Handle("GET /users/search", fullAccountChain.ThenFunc(api.HandlerUsersSearch))
-	mux.Handle("GET /me", authChain.ThenFunc(api.HandlerGetMe))
-
-	// Real-time connections / Messages
-	mux.Handle("GET /ws", fullAccountChain.ThenFunc(api.HandlerWebSocket))
-	mux.Handle("POST /messages", fullAccountChain.ThenFunc(api.HandlerSendMessage))
-	mux.Handle("PATCH /messages/{id}", fullAccountChain.ThenFunc(api.HandlerUpdateMessage))
-
-	// User requests
-	mux.Handle("GET /requests", fullAccountChain.ThenFunc(api.HandlerGetRequests))
-	mux.Handle("POST /requests", fullAccountChain.ThenFunc(api.HandlerCreateRequest))
-	mux.Handle("PATCH /requests/{id}", fullAccountChain.ThenFunc(api.HandlerUpdateRequest))
+	routes.SetupAuthRoutes(mux, &api, authChain, fullAccountChain)
+	routes.SetupUserRoutes(mux, &api, authChain, fullAccountChain)
+	routes.SetupChatRoutes(mux, &api, authChain, fullAccountChain)
+	routes.SetupRequestRoutes(mux, &api, authChain, fullAccountChain)
+	routes.SetupWebSocketRoutes(mux, &api, authChain, fullAccountChain)
 
 	globalChain := alice.New(middleware.CORSMiddleware, mw.SecurityHeadersMiddleware)
 
