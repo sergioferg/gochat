@@ -90,7 +90,7 @@ export default function UserProfileModal({ userId, onClose, onRelationshipChange
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "420px" }}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "440px" }}>
         <div className="modal-header">
           <span className="modal-title">User Profile</span>
           <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Close">
@@ -98,41 +98,41 @@ export default function UserProfileModal({ userId, onClose, onRelationshipChange
           </button>
         </div>
 
-        {error && <div className="alert alert-error" style={{ marginBottom: "12px" }}>{error}</div>}
+        {error && <div className="alert alert-error" style={{ marginBottom: "16px" }}>{error}</div>}
 
         {loading ? (
-          <div className="search-loading" style={{ padding: "24px 0", justifyContent: "center" }}>
+          <div className="search-loading" style={{ padding: "32px 0", justifyContent: "center" }}>
             <span className="spinner-lg" />
           </div>
         ) : !profile ? (
-          <p className="placeholder-text" style={{ padding: "16px 0", textAlign: "center" }}>
+          <p className="placeholder-text" style={{ padding: "24px 0", textAlign: "center" }}>
             User not found.
           </p>
         ) : (
-          <div className="user-profile-card" style={{ padding: "8px 0" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "16px" }}>
-              <div className="chat-item-avatar" style={{ width: "52px", height: "52px", fontSize: "1.3rem" }}>
+          <div className="user-profile-modal-body">
+            {/* Header Box */}
+            <div className="profile-user-header">
+              <div className="profile-avatar-lg">
                 {displayName.charAt(0).toUpperCase()}
               </div>
-              <div>
-                <h3 style={{ margin: "0 0 4px 0", fontSize: "var(--font-size-lg)" }}>{displayName}</h3>
+              <div className="profile-header-info">
+                <h3 className="profile-header-title">{displayName}</h3>
                 {!isDeleted && profile.real_name && (
-                  <p style={{ margin: 0, fontSize: "var(--font-size-xs)", color: "var(--color-text-muted)" }}>
-                    {profile.real_name}
-                  </p>
+                  <p className="profile-header-sub">{profile.real_name}</p>
                 )}
               </div>
             </div>
 
-            <div className="profile-details" style={{ marginBottom: "20px" }}>
-              <div className="profile-item">
-                <strong>Status:</strong>{" "}
+            {/* Details Box */}
+            <div className="profile-details-card">
+              <div className="profile-detail-row">
+                <strong>Account Status</strong>
                 <span className={`status-badge status-${profile.status || "active"}`}>
                   {isDeleted ? "deleted" : profile.status || "active"}
                 </span>
               </div>
-              <div className="profile-item">
-                <strong>Relationship:</strong>{" "}
+              <div className="profile-detail-row">
+                <strong>Relationship</strong>
                 <span style={{ textTransform: "capitalize", fontWeight: "600" }}>
                   {profile.relationship_status === "friend"
                     ? "Friends"
@@ -143,7 +143,7 @@ export default function UserProfileModal({ userId, onClose, onRelationshipChange
                     : profile.relationship_status === "pending_sent"
                     ? "Request Sent"
                     : profile.relationship_status === "pending_received"
-                    ? "Pending Request Received"
+                    ? "Pending Request"
                     : profile.relationship_status === "self"
                     ? "You"
                     : "Not Friends"}
@@ -151,14 +151,14 @@ export default function UserProfileModal({ userId, onClose, onRelationshipChange
               </div>
             </div>
 
+            {/* Action Buttons Row */}
             {!isDeleted && profile.relationship_status !== "self" && (
-              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <div className="profile-actions-group">
                 {profile.relationship_status === "friend" && (
                   <>
                     <button
                       type="button"
-                      className="btn-danger-outline"
-                      style={{ flex: 1 }}
+                      className="profile-btn btn-danger-outline"
                       disabled={actionLoading}
                       onClick={handleUnfriend}
                     >
@@ -166,8 +166,7 @@ export default function UserProfileModal({ userId, onClose, onRelationshipChange
                     </button>
                     <button
                       type="button"
-                      className="btn-danger"
-                      style={{ flex: 1 }}
+                      className="profile-btn btn-danger"
                       disabled={actionLoading}
                       onClick={handleBlock}
                     >
@@ -179,8 +178,7 @@ export default function UserProfileModal({ userId, onClose, onRelationshipChange
                 {profile.relationship_status === "blocked_by_me" && (
                   <button
                     type="button"
-                    className="btn-primary"
-                    style={{ flex: 1 }}
+                    className="profile-btn btn-primary"
                     disabled={actionLoading}
                     onClick={handleUnblock}
                   >
@@ -192,8 +190,7 @@ export default function UserProfileModal({ userId, onClose, onRelationshipChange
                   <>
                     <button
                       type="button"
-                      className="btn-primary"
-                      style={{ flex: 1 }}
+                      className="profile-btn btn-primary"
                       disabled={actionLoading}
                       onClick={handleSendRequest}
                     >
@@ -201,7 +198,7 @@ export default function UserProfileModal({ userId, onClose, onRelationshipChange
                     </button>
                     <button
                       type="button"
-                      className="btn-danger-outline"
+                      className="profile-btn btn-danger-outline"
                       disabled={actionLoading}
                       onClick={handleBlock}
                     >
@@ -211,7 +208,7 @@ export default function UserProfileModal({ userId, onClose, onRelationshipChange
                 )}
 
                 {profile.relationship_status === "pending_sent" && (
-                  <button type="button" className="btn-secondary" style={{ flex: 1 }} disabled>
+                  <button type="button" className="profile-btn btn-secondary" disabled>
                     Request Sent
                   </button>
                 )}
