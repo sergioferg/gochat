@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchActiveSessions, revokeSession } from "../api";
+import { fetchActiveSessions, revokeSession, deleteUserAccount } from "../api";
 
 function formatUserAgent(ua) {
   if (!ua) return "Unknown Device";
@@ -21,11 +21,17 @@ function formatUserAgent(ua) {
 }
 
 export default function UserProfile({ user, onLogout }) {
+  const [view, setView] = useState("profile"); // 'profile' | 'delete_confirm'
   const [sessions, setSessions] = useState([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
   const [sessionError, setSessionError] = useState("");
   const [revokingId, setRevokingId] = useState(null);
   const [revokingAll, setRevokingAll] = useState(false);
+
+  // Delete account state
+  const [deleteInput, setDeleteInput] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     async function loadSessions() {
@@ -77,7 +83,87 @@ export default function UserProfile({ user, onLogout }) {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (deleteInput !== "DELETE") return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await deleteUserAccount();
+      onLogout();
+    } catch (err) {
+      setDeleteError(err.message || "Failed to delete account");
+      setDeleting(false);
+    }
+  };
+
   if (!user) return null;
+
+  if (view === "delete_confirm") {
+    return (
+      <div className="user-profile-card">
+        <div className="profile-header" style={{ marginBottom: "var(--space-3)" }}>
+          <h2 style={{ color: "var(--color-error-text, #ef4444)" }}>⚠️ Delete Account Warning</h2>
+        </div>
+
+        {deleteError && (
+          <div className="alert alert-error" style={{ marginBottom: "var(--space-3)" }}>
+            {deleteError}
+          </div>
+        )}
+
+        <div className="delete-warning-card">
+          <p style={{ fontWeight: "600", marginBottom: "8px" }}>
+            Are you sure you want to permanently delete your account?
+          </p>
+          <ul style={{ margin: "0", paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "6px" }}>
+            <li><strong>Permanent Data Loss:</strong> Your profile, nickname, email, and credentials will be erased.</li>
+            <li><strong>Session Revocation:</strong> All active sessions across all devices will be terminated immediately.</li>
+            <li><strong>Chat & Request Clean-Up:</strong> You will be removed from all active chats and pending user requests.</li>
+            <li><strong>Irreversible:</strong> This action <em>cannot</em> be undone.</li>
+          </ul>
+        </div>
+
+        <div style={{ marginTop: "16px" }}>
+          <label htmlFor="delete-confirm-input" style={{ display: "block", fontSize: "var(--font-size-xs)", fontWeight: "600", marginBottom: "4px" }}>
+            Type <code style={{ color: "#ef4444", background: "rgba(239,68,68,0.1)", padding: "2px 6px", borderRadius: "4px" }}>DELETE</code> to confirm:
+          </label>
+          <input
+            id="delete-confirm-input"
+            type="text"
+            className="delete-confirm-input"
+            value={deleteInput}
+            onChange={(e) => setDeleteInput(e.target.value)}
+            placeholder='Type "DELETE" here'
+            autoFocus
+          />
+        </div>
+
+        <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
+          <button
+            type="button"
+            className="btn-danger"
+            style={{ flex: 1 }}
+            disabled={deleteInput !== "DELETE" || deleting}
+            onClick={handleDeleteAccount}
+          >
+            {deleting ? "Deleting Account..." : "Permanently Delete Account"}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => {
+              setView("profile");
+              setDeleteInput("");
+              setDeleteError("");
+            }}
+            disabled={deleting}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="user-profile-card">
@@ -172,6 +258,27 @@ export default function UserProfile({ user, onLogout }) {
             ))}
           </ul>
         )}
+      </div>
+
+      {/* Danger Zone */}
+      <div className="danger-zone" style={{ marginTop: "24px", paddingTop: "16px", borderTop: "1px solid var(--color-border)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <h4 style={{ margin: "0 0 4px 0", color: "var(--color-error-text, #ef4444)", fontSize: "var(--font-size-sm)" }}>
+              Danger Zone
+            </h4>
+            <p style={{ margin: 0, fontSize: "var(--font-size-xs)", color: "var(--color-text-muted)" }}>
+              Permanently delete your account and all associated data.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="btn-danger-outline"
+            onClick={() => setView("delete_confirm")}
+          >
+            Delete Account
+          </button>
+        </div>
       </div>
     </div>
   );

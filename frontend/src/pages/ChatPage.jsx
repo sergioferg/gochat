@@ -729,44 +729,47 @@ export default function ChatPage({ currentUser }) {
           </div>
         </div>
 
-        <div className="chat-window" ref={chatWindowRef} onScroll={handleScroll}>
-          {loadingOlder && (
-            <div className="search-loading" style={{ padding: "8px 0", justifyContent: "center" }}>
-              <span className="spinner" /> <span>Loading older messages...</span>
-            </div>
-          )}
-          {loadingHistory ? (
-            <div className="search-loading" style={{ margin: "auto" }}>
-              <span className="spinner-lg" />
-            </div>
-          ) : chatLog.length === 0 ? (
-            <p className="placeholder-text" style={{ margin: "auto" }}>
-              No messages yet. Send a message to start chatting!
-            </p>
-          ) : (
-            chatLog.map((msg, index) => {
-              const currentLabel = msg.createdAt ? formatDateLabel(msg.createdAt) : null;
-              const previousLabel =
-                index > 0 && chatLog[index - 1].createdAt
-                  ? formatDateLabel(chatLog[index - 1].createdAt)
-                  : null;
-              const showSeparator = currentLabel && currentLabel !== previousLabel;
+        <div className="chat-window-container">
+          <div className="chat-window" ref={chatWindowRef} onScroll={handleScroll}>
+            {loadingOlder && (
+              <div className="search-loading" style={{ padding: "8px 0", justifyContent: "center" }}>
+                <span className="spinner" /> <span>Loading older messages...</span>
+              </div>
+            )}
+            {loadingHistory ? (
+              <div className="search-loading" style={{ margin: "auto" }}>
+                <span className="spinner-lg" />
+              </div>
+            ) : chatLog.length === 0 ? (
+              <p className="placeholder-text" style={{ margin: "auto" }}>
+                No messages yet. Send a message to start chatting!
+              </p>
+            ) : (
+              chatLog.map((msg, index) => {
+                const currentLabel = msg.createdAt ? formatDateLabel(msg.createdAt) : null;
+                const previousLabel =
+                  index > 0 && chatLog[index - 1].createdAt
+                    ? formatDateLabel(chatLog[index - 1].createdAt)
+                    : null;
+                const showSeparator = currentLabel && currentLabel !== previousLabel;
 
-              return (
-                <Fragment key={msg.id}>
-                  {showSeparator && <div className="date-separator">{currentLabel}</div>}
-                  <div className={`message-wrapper ${msg.sender}`}>
-                    <div className={`message ${msg.sender}`}>
-                      <div className="message-content">{msg.text}</div>
+                return (
+                  <Fragment key={msg.id}>
+                    {showSeparator && <div className="date-separator">{currentLabel}</div>}
+                    <div className={`message-wrapper ${msg.sender}`}>
+                      <div className={`message ${msg.sender}`}>
+                        <div className="message-content">{msg.text}</div>
+                      </div>
+                      {msg.createdAt && (
+                        <div className="message-time">{formatTime(msg.createdAt)}</div>
+                      )}
                     </div>
-                    {msg.createdAt && (
-                      <div className="message-time">{formatTime(msg.createdAt)}</div>
-                    )}
-                  </div>
-                </Fragment>
-              );
-            })
-          )}
+                  </Fragment>
+                );
+              })
+            )}
+          </div>
+
           {isTyping && (
             <div className="typing-indicator">
               <span className="spinner" /> <span>Someone is typing...</span>

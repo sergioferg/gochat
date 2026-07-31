@@ -246,3 +246,9 @@ export async function fetchUserChats() {
   return Array.isArray(data) ? data : [];
 }
 
+export async function deleteUserAccount() {
+  return await request("/users", {
+    method: "DELETE",
+  });
+}
+
