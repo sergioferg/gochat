@@ -41,3 +41,20 @@ WHERE id = $1;
 SELECT id, action_user_id, target_user_id, status, initial_message, created_at, updated_at
 FROM user_relationships
 WHERE id = $1;
+
+-- name: GetBlockedUsers :many
+SELECT
+    u.id,
+    u.nickname,
+    u.real_name,
+    u.status,
+    r.created_at AS blocked_at
+FROM user_relationships r
+JOIN users u ON u.id = r.target_user_id
+WHERE r.action_user_id = $1 AND r.status = 'blocked';
+
+-- name: DeleteRelationshipBetweenUsers :exec
+DELETE FROM user_relationships
+WHERE (action_user_id = $1 AND target_user_id = $2)
+   OR (action_user_id = $2 AND target_user_id = $1);
+

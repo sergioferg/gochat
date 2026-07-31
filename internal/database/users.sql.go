@@ -184,11 +184,38 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) ([]GetUserByIDR
 	return items, nil
 }
 
+const getUserSingleByID = `-- name: GetUserSingleByID :one
+SELECT id, nickname, real_name, status, created_at
+FROM users
+WHERE id = $1
+`
+
+type GetUserSingleByIDRow struct {
+	ID        uuid.UUID
+	Nickname  string
+	RealName  string
+	Status    string
+	CreatedAt time.Time
+}
+
+func (q *Queries) GetUserSingleByID(ctx context.Context, id uuid.UUID) (GetUserSingleByIDRow, error) {
+	row := q.db.QueryRow(ctx, getUserSingleByID, id)
+	var i GetUserSingleByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.Nickname,
+		&i.RealName,
+		&i.Status,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getUsersByNickname = `-- name: GetUsersByNickname :many
 
 SELECT id, nickname, real_name
 FROM users
-WHERE nickname ILIKE $1 AND id != $2
+WHERE nickname ILIKE $1 AND id != $2 AND status NOT IN ('deactivated', 'deleted')
 LIMIT 20
 `
 

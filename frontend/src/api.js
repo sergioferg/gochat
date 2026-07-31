@@ -252,3 +252,35 @@ export async function deleteUserAccount() {
   });
 }
 
+export async function fetchUserProfile(userId) {
+  return await request(`/users/${userId}`, {
+    method: "GET",
+  });
+}
+
+export async function unfriendUser(userId) {
+  return await request(`/friends/${userId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function blockUser(userId) {
+  return await request("/blocks", {
+    method: "POST",
+    body: JSON.stringify({ target_user_id: userId }),
+  });
+}
+
+export async function unblockUser(userId) {
+  return await request(`/blocks/${userId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function fetchBlockedUsers() {
+  const data = await request("/blocks", {
+    method: "GET",
+  });
+  return data?.blocked_users || [];
+}
+

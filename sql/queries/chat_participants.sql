@@ -15,7 +15,7 @@ WHERE chat_id = $1;
 --
 
 -- name: GetChatParticipantsDetails :many
-SELECT u.id, u.nickname, u.real_name
+SELECT u.id, u.nickname, u.real_name, u.status
 FROM users u
 JOIN chat_participants cp ON u.id = cp.user_id
 WHERE cp.chat_id = $1;

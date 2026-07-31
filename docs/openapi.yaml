@@ -871,9 +871,18 @@ paths:
     /ws:
         get:
             summary: Real-Time WebSocket Connection
-            description: Establishes a persistent WebSocket connection for receiving real-time chat push notifications. Requires HTTP connection upgrade.
+            description: >
+                Establishes a persistent WebSocket connection for real-time messaging, typing indicators, and request notifications. 
+                Supports client ping frames and broadcasts `new_message`, `typing`, and `new_request` events.
             security:
                 - BearerAuth: []
+            parameters:
+                - in: query
+                  name: token
+                  required: false
+                  schema:
+                      type: string
+                  description: Optional JWT access token query parameter for browser WebSocket handshakes
             responses:
                 "101":
                     description: Switching Protocols to WebSocket
@@ -1347,4 +1356,95 @@ components:
                     type: string
                     enum: [accept, reject, block]
                     example: accept
+
+        WebSocketClientPingEvent:
+            type: object
+            required:
+                - type
+            properties:
+                type:
+                    type: string
+                    example: ping
+
+        WebSocketClientTypingEvent:
+            type: object
+            required:
+                - type
+                - chat_id
+            properties:
+                type:
+                    type: string
+                    example: typing
+                chat_id:
+                    type: string
+                    format: uuid
+
+        WebSocketServerNewMessageEvent:
+            type: object
+            required:
+                - type
+                - chat_id
+                - sender_id
+                - content
+            properties:
+                type:
+                    type: string
+                    example: new_message
+                chat_id:
+                    type: string
+                    format: uuid
+                message_id:
+                    type: string
+                    format: uuid
+                sender_id:
+                    type: string
+                    format: uuid
+                content:
+                    type: string
+                    example: Hello world!
+                created_at:
+                    type: string
+                    format: date-time
+                target_user_ids:
+                    type: array
+                    items:
+                        type: string
+                        format: uuid
+
+        WebSocketServerTypingEvent:
+            type: object
+            required:
+                - type
+                - chat_id
+                - sender_id
+            properties:
+                type:
+                    type: string
+                    example: typing
+                chat_id:
+                    type: string
+                    format: uuid
+                sender_id:
+                    type: string
+                    format: uuid
+                target_user_ids:
+                    type: array
+                    items:
+                        type: string
+                        format: uuid
+
+        WebSocketServerNewRequestEvent:
+            type: object
+            required:
+                - type
+                - target_user_ids
+            properties:
+                type:
+                    type: string
+                    example: new_request
+                target_user_ids:
+                    type: array
+                    items:
+                        type: string
+                        format: uuid
 

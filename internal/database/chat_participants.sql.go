@@ -54,7 +54,7 @@ func (q *Queries) GetChatParticipantIDs(ctx context.Context, chatID uuid.UUID) (
 
 const getChatParticipantsDetails = `-- name: GetChatParticipantsDetails :many
 
-SELECT u.id, u.nickname, u.real_name
+SELECT u.id, u.nickname, u.real_name, u.status
 FROM users u
 JOIN chat_participants cp ON u.id = cp.user_id
 WHERE cp.chat_id = $1
@@ -64,6 +64,7 @@ type GetChatParticipantsDetailsRow struct {
 	ID       uuid.UUID
 	Nickname string
 	RealName string
+	Status   string
 }
 
 func (q *Queries) GetChatParticipantsDetails(ctx context.Context, chatID uuid.UUID) ([]GetChatParticipantsDetailsRow, error) {
@@ -75,7 +76,12 @@ func (q *Queries) GetChatParticipantsDetails(ctx context.Context, chatID uuid.UU
 	var items []GetChatParticipantsDetailsRow
 	for rows.Next() {
 		var i GetChatParticipantsDetailsRow
-		if err := rows.Scan(&i.ID, &i.Nickname, &i.RealName); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Nickname,
+			&i.RealName,
+			&i.Status,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

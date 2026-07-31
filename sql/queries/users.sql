@@ -81,5 +81,11 @@ WHERE id = $1;
 -- name: GetUsersByNickname :many
 SELECT id, nickname, real_name
 FROM users
-WHERE nickname ILIKE $1 AND id != $2
+WHERE nickname ILIKE $1 AND id != $2 AND status NOT IN ('deactivated', 'deleted')
 LIMIT 20;
+
+-- name: GetUserSingleByID :one
+SELECT id, nickname, real_name, status, created_at
+FROM users
+WHERE id = $1;
+

@@ -10,6 +10,7 @@ import {
   fetchChatMessages,
   refreshToken,
 } from "../api";
+import UserProfileModal from "../components/UserProfileModal";
 
 export default function ChatPage({ currentUser }) {
   const [message, setMessage] = useState("");
@@ -22,6 +23,7 @@ export default function ChatPage({ currentUser }) {
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   // Search & Request states
   const [searchQuery, setSearchQuery] = useState("");
@@ -492,6 +494,18 @@ export default function ChatPage({ currentUser }) {
     ? myChats.find((c) => c.id === activeChatId)
     : null;
 
+  const isDeletedAccount = (user) => {
+    if (!user) return false;
+    return user.status === "deleted";
+  };
+
+  const formatUserDisplayName = (user, fallback = "User") => {
+    if (!user) return fallback;
+    if (isDeletedAccount(user)) return "Deleted Account";
+    if (typeof user === "string") return user;
+    return user.nickname || user.real_name || fallback;
+  };
+
   const getChatDisplayName = (chat) => {
     if (!chat) return "";
     if (chat.name) return chat.name;
@@ -499,7 +513,7 @@ export default function ChatPage({ currentUser }) {
     if (chat.participants && Array.isArray(chat.participants)) {
       const other = chat.participants.find((p) => p.id !== currentUser?.id);
       if (other) {
-        return other.nickname || other.real_name || "Direct Chat";
+        return formatUserDisplayName(other, "Direct Chat");
       }
     }
     return "Direct Chat";
@@ -546,9 +560,13 @@ export default function ChatPage({ currentUser }) {
                 const status = requestStatus[user.id] || "idle";
                 return (
                   <li key={user.id} className="search-user-item">
-                    <div className="search-user-info">
-                      <span className="search-user-name">{user.nickname}</span>
-                      {user.real_name && (
+                    <div
+                      className="search-user-info"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => setSelectedUserId(user.id)}
+                    >
+                      <span className="search-user-name">{formatUserDisplayName(user)}</span>
+                      {!isDeletedAccount(user) && user.real_name && (
                         <span className="search-user-sub">{user.real_name}</span>
                       )}
                     </div>
@@ -606,7 +624,11 @@ export default function ChatPage({ currentUser }) {
                   <li key={req.id} className="request-card">
                     <div className="request-info">
                       <span className="request-sender">
-                        {req.sender_nickname || req.sender_real_name || "User"}
+                        {formatUserDisplayName({
+                          nickname: req.sender_nickname,
+                          real_name: req.sender_real_name,
+                          status: req.status,
+                        })}
                       </span>
                       {req.initial_message && (
                         <p className="request-msg">"{req.initial_message}"</p>
@@ -714,7 +736,19 @@ export default function ChatPage({ currentUser }) {
 
           <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
             <div>
-              Active Chat: <strong>
+              Active Chat:{" "}
+              <strong
+                style={{
+                  cursor: activeChat?.participants ? "pointer" : "default",
+                  textDecoration: activeChat?.participants ? "underline" : "none",
+                }}
+                onClick={() => {
+                  if (activeChat?.participants) {
+                    const other = activeChat.participants.find((p) => p.id !== currentUser?.id);
+                    if (other) setSelectedUserId(other.id);
+                  }
+                }}
+              >
                 {!activeChatId || activeChatId === "general"
                   ? "General Chat"
                   : getChatDisplayName(activeChat)}
@@ -792,11 +826,21 @@ export default function ChatPage({ currentUser }) {
             className="btn-primary"
             style={{ width: "auto" }}
           >
-            {sending && <span className="spinner" />}
-            <span>{sending ? "Sending..." : "Send"}</span>
+            {sending ? <span className="spinner" /> : "Send"}
           </button>
         </form>
       </main>
+
+      {selectedUserId && (
+        <UserProfileModal
+          userId={selectedUserId}
+          onClose={() => setSelectedUserId(null)}
+          onRelationshipChange={() => {
+            loadChats();
+            loadRequests();
+          }}
+        />
+      )}
     </div>
   );
 }

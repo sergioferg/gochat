@@ -60,6 +60,68 @@ func (q *Queries) DeleteRelationship(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const deleteRelationshipBetweenUsers = `-- name: DeleteRelationshipBetweenUsers :exec
+DELETE FROM user_relationships
+WHERE (action_user_id = $1 AND target_user_id = $2)
+   OR (action_user_id = $2 AND target_user_id = $1)
+`
+
+type DeleteRelationshipBetweenUsersParams struct {
+	ActionUserID uuid.UUID
+	TargetUserID uuid.UUID
+}
+
+func (q *Queries) DeleteRelationshipBetweenUsers(ctx context.Context, arg DeleteRelationshipBetweenUsersParams) error {
+	_, err := q.db.Exec(ctx, deleteRelationshipBetweenUsers, arg.ActionUserID, arg.TargetUserID)
+	return err
+}
+
+const getBlockedUsers = `-- name: GetBlockedUsers :many
+SELECT
+    u.id,
+    u.nickname,
+    u.real_name,
+    u.status,
+    r.created_at AS blocked_at
+FROM user_relationships r
+JOIN users u ON u.id = r.target_user_id
+WHERE r.action_user_id = $1 AND r.status = 'blocked'
+`
+
+type GetBlockedUsersRow struct {
+	ID        uuid.UUID
+	Nickname  string
+	RealName  string
+	Status    string
+	BlockedAt time.Time
+}
+
+func (q *Queries) GetBlockedUsers(ctx context.Context, actionUserID uuid.UUID) ([]GetBlockedUsersRow, error) {
+	rows, err := q.db.Query(ctx, getBlockedUsers, actionUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetBlockedUsersRow
+	for rows.Next() {
+		var i GetBlockedUsersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Nickname,
+			&i.RealName,
+			&i.Status,
+			&i.BlockedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getPendingRequestsForUser = `-- name: GetPendingRequestsForUser :many
 SELECT
     r.id,

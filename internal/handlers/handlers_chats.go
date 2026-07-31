@@ -106,6 +106,7 @@ type ChatParticipant struct {
 	ID       uuid.UUID `json:"id"`
 	Nickname string    `json:"nickname"`
 	RealName string    `json:"real_name"`
+	Status   string    `json:"status"`
 }
 
 func (api *API) HandlerGetUserChats(w http.ResponseWriter, r *http.Request) {
@@ -157,6 +158,7 @@ func (api *API) HandlerGetUserChats(w http.ResponseWriter, r *http.Request) {
 					ID:       p.ID,
 					Nickname: p.Nickname,
 					RealName: p.RealName,
+					Status:   p.Status,
 				})
 			}
 		}

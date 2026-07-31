@@ -96,23 +96,62 @@ GoChat uses **JWT (JSON Web Tokens)** for authenticating API requests.
 
 - **Endpoint:** `GET /ws`
 - **Protocol:** `ws://` (Local) or `wss://` (Production)
-- **Header:** Requires `Authorization: Bearer <access_token>` during WebSocket handshake.
+- **Authentication:** Requires `Authorization: Bearer <access_token>` or query parameter `token=<access_token>` during WebSocket handshake.
 
-### Real-Time Event Payload Example
+### Client-to-Server Events
 
-When a new message is published via RabbitMQ, it is broadcast to connected WebSocket clients as a JSON event payload:
+#### 1. Ping Heartbeat
+Sent by the client every 30 seconds to maintain connection activity:
+```json
+{
+  "type": "ping"
+}
+```
 
+#### 2. Typing Indicator Event
+Sent by the client when the user actively types in a chat window (throttled to 2 seconds):
+```json
+{
+  "type": "typing",
+  "chat_id": "123e4567-e89b-12d3-a456-426614174000"
+}
+```
+
+---
+
+### Server-to-Client Broadcast Events
+
+#### 1. New Message Event (`new_message`)
+Broadcasted to chat participants when a new message is posted:
 ```json
 {
   "type": "new_message",
   "chat_id": "123e4567-e89b-12d3-a456-426614174000",
-  "message": {
-    "id": "987f6543-e21b-12d3-a456-426614174000",
-    "sender_id": "usr_112233",
-    "content": "Hello world!",
-    "created_at": "2026-07-26T16:00:00Z"
-  },
+  "message_id": "987f6543-e21b-12d3-a456-426614174000",
+  "sender_id": "usr_112233",
+  "content": "Hello world!",
+  "created_at": "2026-07-26T16:00:00Z",
   "target_user_ids": ["usr_112233", "usr_445566"]
+}
+```
+
+#### 2. Typing Event (`typing`)
+Broadcasted to recipient(s) when another user is typing:
+```json
+{
+  "type": "typing",
+  "chat_id": "123e4567-e89b-12d3-a456-426614174000",
+  "sender_id": "usr_112233",
+  "target_user_ids": ["usr_445566"]
+}
+```
+
+#### 3. New Request Event (`new_request`)
+Broadcasted to target user when a new chat request is received:
+```json
+{
+  "type": "new_request",
+  "target_user_ids": ["usr_445566"]
 }
 ```
 
@@ -121,3 +160,4 @@ When a new message is published via RabbitMQ, it is broadcast to connected WebSo
 ## OpenAPI Specification
 
 Detailed schema definitions, response codes, and examples can be found in [openapi.yaml](file:///home/sergiog/Projects/go/src/gochat/docs/openapi.yaml).
+

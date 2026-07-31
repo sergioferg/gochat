@@ -23,6 +23,7 @@ func SetupUserRoutes(mux *http.ServeMux, api *handlers.API, authChain, fullAccou
 	mux.Handle("DELETE /users", authChain.ThenFunc(api.HandlerUserDelete))
 	mux.Handle("PATCH /users", authChain.ThenFunc(api.HandlerUserUpdate))
 	mux.Handle("GET /users/search", fullAccountChain.ThenFunc(api.HandlerUsersSearch))
+	mux.Handle("GET /users/{id}", fullAccountChain.ThenFunc(api.HandlerGetUserProfile))
 	mux.Handle("GET /me", authChain.ThenFunc(api.HandlerGetMe))
 }
 
@@ -38,6 +39,12 @@ func SetupRequestRoutes(mux *http.ServeMux, api *handlers.API, authChain, fullAc
 	mux.Handle("GET /requests", fullAccountChain.ThenFunc(api.HandlerGetRequests))
 	mux.Handle("POST /requests", fullAccountChain.ThenFunc(api.HandlerCreateRequest))
 	mux.Handle("PATCH /requests/{id}", fullAccountChain.ThenFunc(api.HandlerUpdateRequest))
+
+	// Direct Relationship & Block Routes
+	mux.Handle("DELETE /friends/{id}", fullAccountChain.ThenFunc(api.HandlerUnfriendUser))
+	mux.Handle("GET /blocks", fullAccountChain.ThenFunc(api.HandlerGetBlockedUsers))
+	mux.Handle("POST /blocks", fullAccountChain.ThenFunc(api.HandlerBlockUser))
+	mux.Handle("DELETE /blocks/{id}", fullAccountChain.ThenFunc(api.HandlerUnblockUser))
 }
 
 func SetupWebSocketRoutes(mux *http.ServeMux, api *handlers.API, authChain, fullAccountChain alice.Chain) {
