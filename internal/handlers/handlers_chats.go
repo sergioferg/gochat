@@ -116,6 +116,7 @@ func (api *API) HandlerGetUserChats(w http.ResponseWriter, r *http.Request) {
 		LastMessageContent *string           `json:"last_message_content"`
 		LastMessageID      *uuid.UUID        `json:"last_message_id"`
 		Participants       []ChatParticipant `json:"participants"`
+		CanSendMessages    bool              `json:"can_send_messages"`
 	}
 
 	userID, ok := r.Context().Value(middleware.UserIDContextKey).(uuid.UUID)
@@ -163,6 +164,24 @@ func (api *API) HandlerGetUserChats(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		canSend := true
+		if !dbRow.IsGroup && len(participants) == 2 {
+			var receiverID uuid.UUID
+			if participants[0].ID == userID {
+				receiverID = participants[1].ID
+			} else {
+				receiverID = participants[0].ID
+			}
+
+			rel, err := api.DB.GetRelationshipBetweenUsers(r.Context(), database.GetRelationshipBetweenUsersParams{
+				ActionUserID: userID,
+				TargetUserID: receiverID,
+			})
+			if err != nil || rel.Status != "accepted" {
+				canSend = false
+			}
+		}
+
 		responses = append(responses, response{
 			Chat: Chat{
 				ID:      dbRow.ChatID,
@@ -173,6 +192,7 @@ func (api *API) HandlerGetUserChats(w http.ResponseWriter, r *http.Request) {
 			LastMessageContent: lastContent,
 			LastMessageID:      lastMsgID,
 			Participants:       participants,
+			CanSendMessages:    canSend,
 		})
 	}
 

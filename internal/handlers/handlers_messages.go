@@ -122,6 +122,37 @@ func (api *API) HandlerSendMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	targetIDs, err := api.DB.GetChatParticipantIDs(r.Context(), params.ChatID)
+	if err != nil {
+		logrus.Warn("Error getting chat participants:", err)
+		respond.WithError(w, http.StatusInternalServerError, "Something went wrong", err)
+		return
+	}
+
+	if !slices.Contains(targetIDs, userID) {
+		respond.WithError(w, http.StatusForbidden, "You do not have access to this chat", nil)
+		return
+	}
+
+	if len(targetIDs) == 2 {
+		var receiverID uuid.UUID
+		if targetIDs[0] == userID {
+			receiverID = targetIDs[1]
+		} else {
+			receiverID = targetIDs[0]
+		}
+
+		rel, err := api.DB.GetRelationshipBetweenUsers(r.Context(), database.GetRelationshipBetweenUsersParams{
+			ActionUserID: userID,
+			TargetUserID: receiverID,
+		})
+
+		if err != nil || rel.Status != "accepted" {
+			respond.WithError(w, http.StatusForbidden, "Cannot send messages to this user.", nil)
+			return
+		}
+	}
+
 	message, err := api.DB.CreateMessage(r.Context(), database.CreateMessageParams{
 		ID:       uuid.Must(uuid.NewV7()),
 		Content:  params.Content,
@@ -130,13 +161,6 @@ func (api *API) HandlerSendMessage(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		logrus.Warn("Error creating message:", err)
-		respond.WithError(w, http.StatusInternalServerError, "Something went wrong", err)
-		return
-	}
-
-	targetIDs, err := api.DB.GetChatParticipantIDs(r.Context(), params.ChatID)
-	if err != nil {
-		logrus.Warn("Error getting chat participants:", err)
 		respond.WithError(w, http.StatusInternalServerError, "Something went wrong", err)
 		return
 	}

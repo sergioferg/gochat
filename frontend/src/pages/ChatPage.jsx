@@ -811,24 +811,30 @@ export default function ChatPage({ currentUser }) {
           )}
         </div>
 
-        <form onSubmit={handleSend} className="chat-input-area">
-          <input
-            ref={inputRef}
-            type="text"
-            value={message}
-            onChange={handleInputChange}
-            placeholder="Type a message..."
-            autoFocus
-          />
-          <button
-            type="submit"
-            disabled={sending || !message.trim()}
-            className="btn-primary"
-            style={{ width: "auto" }}
-          >
-            {sending ? <span className="spinner" /> : "Send"}
-          </button>
-        </form>
+        {activeChat && activeChat.can_send_messages === false ? (
+          <div className="chat-disabled-message" style={{ textAlign: "center", padding: "16px", color: "var(--text-secondary)", fontStyle: "italic", borderTop: "1px solid var(--border-light)", background: "var(--surface-50)" }}>
+            You cannot send messages to this user.
+          </div>
+        ) : (
+          <form onSubmit={handleSend} className="chat-input-area">
+            <input
+              ref={inputRef}
+              type="text"
+              value={message}
+              onChange={handleInputChange}
+              placeholder="Type a message..."
+              autoFocus
+            />
+            <button
+              type="submit"
+              disabled={sending || !message.trim()}
+              className="btn-primary"
+              style={{ width: "auto" }}
+            >
+              {sending ? <span className="spinner" /> : "Send"}
+            </button>
+          </form>
+        )}
       </main>
 
       {selectedUserId && (
