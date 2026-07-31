@@ -1292,7 +1292,7 @@
   align-items: center;
   justify-content: center;
   height: 42px;
-  padding: var(--space-2.5) var(--space-4);
+  padding: 10px var(--space-4);
   font-size: var(--font-size-sm) !important;
   font-weight: var(--font-weight-medium);
   border-radius: var(--radius-md);
