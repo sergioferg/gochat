@@ -116,6 +116,7 @@ func SetAuthCookie(w http.ResponseWriter, token string) {
 		Name:     "refresh_token",
 		Value:    token,
 		Path:     "/",
+		Domain:   ".trygochat.tech",
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteNoneMode,

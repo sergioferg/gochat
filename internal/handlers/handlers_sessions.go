@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/sergioferg/gochat/internal/database"
 	"github.com/sergioferg/gochat/internal/middleware"
 	"github.com/sergioferg/gochat/internal/respond"
+	"github.com/sirupsen/logrus"
 )
 
 func (api *API) HandlerGetSessions(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +66,11 @@ func (api *API) HandlerRefreshAccessToken(w http.ResponseWriter, r *http.Request
 
 	cookie, err := r.Cookie("refresh_token")
 	if err != nil {
+		if errors.Is(err, http.ErrNoCookie) {
+			logrus.Debug("No session found (missing refresh_token cookie)")
+			respond.WithJSON(w, http.StatusUnauthorized, map[string]string{"error": "Missing refresh token cookie"})
+			return
+		}
 		respond.WithError(w, http.StatusUnauthorized, "Missing refresh token cookie", err)
 		return
 	}
