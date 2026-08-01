@@ -356,16 +356,7 @@ func (api *API) HandlerUserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	secure, sameSite := getCookieOptions(r)
-	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
-		Value:    refreshToken,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   secure,
-		SameSite: sameSite,
-		MaxAge:   60 * 60 * 24 * 60, // 60 days (same as db duration)
-	})
+	auth.SetAuthCookie(w, refreshToken)
 
 	respond.WithJSON(w, http.StatusOK, response{
 		User: User{
@@ -390,15 +381,14 @@ func (api *API) HandlerUserLogout(w http.ResponseWriter, r *http.Request) {
 		_ = api.DB.RevokeSessionByToken(r.Context(), hashedToken)
 	}
 
-	secure, sameSite := getCookieOptions(r)
 	http.SetCookie(w, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    "",
 		Path:     "/",
 		MaxAge:   -1,
 		HttpOnly: true,
-		Secure:   secure,
-		SameSite: sameSite,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
 	})
 
 	w.WriteHeader(http.StatusNoContent)
@@ -842,16 +832,7 @@ func (api *API) HandlerGitHubCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	secure, sameSite := getCookieOptions(r)
-	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
-		Value:    refreshToken,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   secure,
-		SameSite: sameSite,
-		MaxAge:   60 * 60 * 24 * 60, // 60 days (same as db duration)
-	})
+	auth.SetAuthCookie(w, refreshToken)
 
 	frontendURL := fmt.Sprintf("%s/oauth-callback#access_token=%s", api.FrontendURL, accessToken)
 
@@ -868,12 +849,4 @@ func generateRandomSuffix(n int) string {
 		b[i] = charset[int(b[i])%len(charset)]
 	}
 	return string(b)
-}
-
-func getCookieOptions(r *http.Request) (bool, http.SameSite) {
-	isSecure := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
-	if isSecure {
-		return true, http.SameSiteNoneMode
-	}
-	return false, http.SameSiteLaxMode
 }

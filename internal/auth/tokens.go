@@ -110,3 +110,16 @@ func GenerateStateOauthCookie(w http.ResponseWriter) string {
 
 	return state
 }
+
+func SetAuthCookie(w http.ResponseWriter, token string) {
+	cookie := &http.Cookie{
+		Name:     "refresh_token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
+		MaxAge:   60 * 60 * 24 * 60,
+	}
+	http.SetCookie(w, cookie)
+}
