@@ -9,6 +9,8 @@ import {
   fetchUserChats,
   fetchChatMessages,
   refreshToken,
+  unblockUser,
+  createChat,
 } from "../api";
 import UserProfileModal from "../components/UserProfileModal";
 
@@ -221,6 +223,37 @@ export default function ChatPage({ currentUser }) {
           text: msg || "Failed to send request",
         });
         setRequestStatus((prev) => ({ ...prev, [user.id]: "idle" }));
+      }
+    }
+  };
+
+  const handleUnblockUser = async (user) => {
+    setRequestStatus((prev) => ({ ...prev, [user.id]: "unblocking" }));
+    try {
+      await unblockUser(user.id);
+      setSearchResults((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, relationship_status: "none" } : u))
+      );
+      setRequestStatus((prev) => ({ ...prev, [user.id]: "idle" }));
+    } catch (err) {
+      console.error("Failed to unblock user:", err);
+      alert(err.message || "Failed to unblock user");
+      setRequestStatus((prev) => ({ ...prev, [user.id]: "idle" }));
+    }
+  };
+
+  const handleOpenChat = async (user) => {
+    const existing = myChats.find((c) =>
+      c.participants?.some((p) => p.id === user.id)
+    );
+    if (existing) {
+      setActiveChatId(existing.id);
+    } else {
+      try {
+        const newChat = await createChat([user.id]);
+        await loadChats(newChat?.id);
+      } catch (err) {
+        console.error("Failed to open chat:", err);
       }
     }
   };
@@ -558,6 +591,70 @@ export default function ChatPage({ currentUser }) {
             <ul className="search-results-list">
               {searchResults.map((user) => {
                 const status = requestStatus[user.id] || "idle";
+                const relStatus = user.relationship_status || "none";
+
+                let actionButton = null;
+
+                if (status === "sending") {
+                  actionButton = (
+                    <button type="button" className="btn-send-request" disabled>
+                      <span className="spinner" /> <span>Sending</span>
+                    </button>
+                  );
+                } else if (status === "unblocking") {
+                  actionButton = (
+                    <button type="button" className="btn-unblock" disabled>
+                      <span className="spinner" /> <span>Unblocking</span>
+                    </button>
+                  );
+                } else if (status === "sent" || relStatus === "request_sent") {
+                  actionButton = (
+                    <button type="button" className="btn-send-request sent" disabled>
+                      Pending
+                    </button>
+                  );
+                } else if (relStatus === "blocked_by_me") {
+                  actionButton = (
+                    <button
+                      type="button"
+                      className="btn-unblock"
+                      onClick={() => handleUnblockUser(user)}
+                    >
+                      Unblock
+                    </button>
+                  );
+                } else if (relStatus === "friends") {
+                  actionButton = (
+                    <button
+                      type="button"
+                      className="btn-send-request friends"
+                      onClick={() => handleOpenChat(user)}
+                    >
+                      Message
+                    </button>
+                  );
+                } else if (relStatus === "request_received") {
+                  actionButton = (
+                    <button
+                      type="button"
+                      className="btn-send-request pending-received"
+                      onClick={() => setSelectedUserId(user.id)}
+                    >
+                      Pending Request
+                    </button>
+                  );
+                } else {
+                  actionButton = (
+                    <button
+                      type="button"
+                      className="btn-send-request"
+                      onClick={() => handleSendRequest(user)}
+                    >
+                      Send Request
+                    </button>
+                  );
+                }
+
                 return (
                   <li key={user.id} className="search-user-item">
                     <div
@@ -570,22 +667,7 @@ export default function ChatPage({ currentUser }) {
                         <span className="search-user-sub">{user.real_name}</span>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      className={`btn-send-request ${status === "sent" ? "sent" : ""}`}
-                      onClick={() => handleSendRequest(user)}
-                      disabled={status === "sending" || status === "sent"}
-                    >
-                      {status === "sending" ? (
-                        <>
-                          <span className="spinner" /> <span>Sending</span>
-                        </>
-                      ) : status === "sent" ? (
-                        "Sent"
-                      ) : (
-                        "Send Request"
-                      )}
-                    </button>
+                    {actionButton}
                   </li>
                 );
               })}

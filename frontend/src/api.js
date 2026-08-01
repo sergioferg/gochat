@@ -284,3 +284,14 @@ export async function fetchBlockedUsers() {
   return data?.blocked_users || [];
 }
 
+export async function createChat(participantIds, isGroup = false, name = null) {
+  return await request("/chats", {
+    method: "POST",
+    body: JSON.stringify({
+      participant_ids: participantIds,
+      is_group: isGroup,
+      name: name,
+    }),
+  });
+}
+

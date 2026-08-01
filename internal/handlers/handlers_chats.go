@@ -167,17 +167,20 @@ func (api *API) HandlerGetUserChats(w http.ResponseWriter, r *http.Request) {
 		canSend := true
 		if !dbRow.IsGroup && len(participants) == 2 {
 			var receiverID uuid.UUID
+			var receiverStatus string
 			if participants[0].ID == userID {
 				receiverID = participants[1].ID
+				receiverStatus = participants[1].Status
 			} else {
 				receiverID = participants[0].ID
+				receiverStatus = participants[0].Status
 			}
 
 			rel, err := api.DB.GetRelationshipBetweenUsers(r.Context(), database.GetRelationshipBetweenUsersParams{
 				ActionUserID: userID,
 				TargetUserID: receiverID,
 			})
-			if err != nil || rel.Status != "accepted" {
+			if err != nil || rel.Status != "accepted" || receiverStatus == "deleted" {
 				canSend = false
 			}
 		}

@@ -1,4 +1,4 @@
-# GoChat
+# <img src="frontend/public/logo.png" alt="GoChat Logo" width="60" valign="middle" /> GoChat
 
 A high-performance, real-time messaging application featuring a Go backend and a React/Vite frontend, structured as a monorepo.
 

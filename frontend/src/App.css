@@ -932,6 +932,36 @@
   cursor: not-allowed;
 }
 
+.btn-unblock {
+  padding: 4px 10px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  background-color: #ef4444;
+  color: #ffffff;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.btn-unblock:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.btn-unblock:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-send-request.friends {
+  background-color: var(--color-surface-hover, #3b82f6);
+  color: #ffffff;
+}
+
 .placeholder-text {
   margin: 0;
   font-size: var(--font-size-xs);

@@ -151,6 +151,12 @@ func (api *API) HandlerSendMessage(w http.ResponseWriter, r *http.Request) {
 			respond.WithError(w, http.StatusForbidden, "Cannot send messages to this user.", nil)
 			return
 		}
+
+		receiver, err := api.DB.GetUserSingleByID(r.Context(), receiverID)
+		if err != nil || receiver.Status == "deleted" {
+			respond.WithError(w, http.StatusForbidden, "Cannot send messages to deleted users.", nil)
+			return
+		}
 	}
 
 	message, err := api.DB.CreateMessage(r.Context(), database.CreateMessageParams{

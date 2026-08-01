@@ -404,9 +404,10 @@ func (api *API) HandlerUserLogout(w http.ResponseWriter, r *http.Request) {
 
 func (api *API) HandlerUsersSearch(w http.ResponseWriter, r *http.Request) {
 	type UserSearchResult struct {
-		ID       uuid.UUID `json:"id"`
-		Nickname string    `json:"nickname"`
-		RealName string    `json:"real_name"`
+		ID                 uuid.UUID `json:"id"`
+		Nickname           string    `json:"nickname"`
+		RealName           string    `json:"real_name"`
+		RelationshipStatus string    `json:"relationship_status"`
 	}
 
 	type response struct {
@@ -436,10 +437,39 @@ func (api *API) HandlerUsersSearch(w http.ResponseWriter, r *http.Request) {
 
 	users := make([]UserSearchResult, 0, len(dbUsers))
 	for _, u := range dbUsers {
+		relStatus := "none"
+		rel, err := api.DB.GetRelationshipBetweenUsers(r.Context(), database.GetRelationshipBetweenUsersParams{
+			ActionUserID: userID,
+			TargetUserID: u.ID,
+		})
+
+		if err == nil {
+			if rel.Status == "blocked" && rel.ActionUserID == u.ID {
+				// Privacy rule: exclude target users who have an active block against the searching user
+				continue
+			}
+
+			switch rel.Status {
+			case "accepted":
+				relStatus = "friends"
+			case "pending":
+				if rel.ActionUserID == userID {
+					relStatus = "request_sent"
+				} else {
+					relStatus = "request_received"
+				}
+			case "blocked":
+				if rel.ActionUserID == userID {
+					relStatus = "blocked_by_me"
+				}
+			}
+		}
+
 		users = append(users, UserSearchResult{
-			ID:       u.ID,
-			Nickname: u.Nickname,
-			RealName: u.RealName,
+			ID:                 u.ID,
+			Nickname:           u.Nickname,
+			RealName:           u.RealName,
+			RelationshipStatus: relStatus,
 		})
 	}
 
