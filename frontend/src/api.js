@@ -69,7 +69,6 @@ async function request(endpoint, options = {}, isRetry = false) {
 
   if (
     response.status === 401 &&
-    token &&
     !isRetry &&
     !["/login", "/refresh", "/users", "/verify"].includes(endpoint)
   ) {

@@ -7,7 +7,7 @@ import VerifyEmailPage from "./pages/VerifyEmailPage";
 import CompleteProfile from "./pages/CompleteProfile";
 import Auth from "./components/Auth";
 import UserProfile from "./components/UserProfile";
-import { fetchCurrentUser, logoutUser, getToken } from "./api";
+import { fetchCurrentUser, logoutUser, getToken, refreshToken } from "./api";
 import "./App.css";
 
 function App() {
@@ -36,7 +36,18 @@ function App() {
     // Restore user session on mount
     useEffect(() => {
         async function loadUser() {
-            if (getToken()) {
+            let token = getToken();
+            if (!token) {
+                try {
+                    const refreshData = await refreshToken();
+                    if (refreshData && refreshData.token) {
+                        token = refreshData.token;
+                    }
+                } catch (err) {
+                    // Refresh token cookie not present or invalid
+                }
+            }
+            if (token) {
                 try {
                     const user = await fetchCurrentUser();
                     setCurrentUser(user);

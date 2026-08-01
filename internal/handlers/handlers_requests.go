@@ -237,31 +237,41 @@ func (api *API) HandlerUpdateRequest(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		chatID := uuid.Must(uuid.NewV7())
-		chat, err := qtx.CreateChat(ctx, database.CreateChatParams{
-			ID:      chatID,
-			Name:    nil,
-			IsGroup: false,
+		var targetChatID uuid.UUID
+		existingChatID, err := qtx.GetDirectChatBetweenUsers(ctx, database.GetDirectChatBetweenUsersParams{
+			UserID:   rel.ActionUserID,
+			UserID_2: rel.TargetUserID,
 		})
-		if err != nil {
-			respond.WithError(w, http.StatusInternalServerError, "Failed to create chat room", err)
-			return
-		}
+		if err == nil {
+			targetChatID = existingChatID
+		} else {
+			chatID := uuid.Must(uuid.NewV7())
+			chat, err := qtx.CreateChat(ctx, database.CreateChatParams{
+				ID:      chatID,
+				Name:    nil,
+				IsGroup: false,
+			})
+			if err != nil {
+				respond.WithError(w, http.StatusInternalServerError, "Failed to create chat room", err)
+				return
+			}
 
-		if err := qtx.AddUserToChat(ctx, database.AddUserToChatParams{
-			ChatID: chat.ID,
-			UserID: rel.ActionUserID,
-		}); err != nil {
-			respond.WithError(w, http.StatusInternalServerError, "Failed to add user to chat", err)
-			return
-		}
+			if err := qtx.AddUserToChat(ctx, database.AddUserToChatParams{
+				ChatID: chat.ID,
+				UserID: rel.ActionUserID,
+			}); err != nil {
+				respond.WithError(w, http.StatusInternalServerError, "Failed to add user to chat", err)
+				return
+			}
 
-		if err := qtx.AddUserToChat(ctx, database.AddUserToChatParams{
-			ChatID: chat.ID,
-			UserID: rel.TargetUserID,
-		}); err != nil {
-			respond.WithError(w, http.StatusInternalServerError, "Failed to add target user to chat", err)
-			return
+			if err := qtx.AddUserToChat(ctx, database.AddUserToChatParams{
+				ChatID: chat.ID,
+				UserID: rel.TargetUserID,
+			}); err != nil {
+				respond.WithError(w, http.StatusInternalServerError, "Failed to add target user to chat", err)
+				return
+			}
+			targetChatID = chat.ID
 		}
 
 		if rel.InitialMessage != nil && strings.TrimSpace(*rel.InitialMessage) != "" {
@@ -270,7 +280,7 @@ func (api *API) HandlerUpdateRequest(w http.ResponseWriter, r *http.Request) {
 				ID:       msgID,
 				Content:  *rel.InitialMessage,
 				SenderID: rel.ActionUserID,
-				ChatID:   chat.ID,
+				ChatID:   targetChatID,
 			})
 			if err != nil {
 				respond.WithError(w, http.StatusInternalServerError, "Failed to create initial message", err)
@@ -285,7 +295,7 @@ func (api *API) HandlerUpdateRequest(w http.ResponseWriter, r *http.Request) {
 
 		respond.WithJSON(w, http.StatusOK, map[string]any{
 			"message": "Request accepted",
-			"chat_id": chat.ID,
+			"chat_id": targetChatID,
 		})
 	}
 }

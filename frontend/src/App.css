@@ -1195,6 +1195,8 @@
   display: flex;
   gap: var(--space-3);
   flex-shrink: 0;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-4);
 }
 
 .chat-input-area input {
