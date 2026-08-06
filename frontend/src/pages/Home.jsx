@@ -1,79 +1,104 @@
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 
 export default function Home({ currentUser, onOpenAuthModal }) {
+  const featuresRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+
+    const boxes = featuresRef.current?.querySelectorAll(".feature-box");
+    boxes?.forEach((box) => observer.observe(box));
+
+    return () => {
+      boxes?.forEach((box) => observer.unobserve(box));
+    };
+  }, []);
+
   return (
-    <main className="page-container">
-      <div className="hero-card" style={{ textAlign: "center", padding: "var(--space-8) var(--space-4)" }}>
-        <img
-          src="/logo.png"
-          alt="GoChat Logo"
-          style={{ width: "80px", height: "80px", marginBottom: "var(--space-4)", objectFit: "contain" }}
-        />
-        <h1>Welcome to GoChat</h1>
-        <p style={{ maxWidth: "600px", margin: "0 auto var(--space-6)" }}>
-          A real-time messaging application connected to a Go server on Azure App Service and deployed via Azure Static Web Apps.
-        </p>
-
-        {currentUser ? (
-          <div style={{ marginBottom: "var(--space-8)" }}>
-            <p style={{ marginBottom: "var(--space-4)" }}>
-              Authenticated as <strong>{currentUser.nickname || currentUser.email}</strong>
-            </p>
-            <div style={{ display: "flex", gap: "var(--space-4)", justifyContent: "center", flexWrap: "wrap" }}>
-              <Link to="/chat" className="btn-primary" style={{ width: "auto", textDecoration: "none" }}>
-                Open Chat Interface
-              </Link>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={onOpenAuthModal}
-              >
-                Account Details
-              </button>
-            </div>
+    <div className="app-home-page">
+      <section className="hero-section">
+        <div className="hero-brush-line brush-1"></div>
+        <div className="hero-brush-line brush-2"></div>
+        
+        <div className="hero-content">
+          <h1 className="hero-title">Go<span>Chat</span></h1>
+          <p className="hero-description">
+            A real-time messaging application connected to a Go server on Azure App Service and deployed via Azure Static Web Apps.
+          </p>
+          
+          <div className="hero-actions">
+            {currentUser ? (
+              <>
+                <Link to="/chat" className="btn-primary" style={{ textDecoration: "none" }}>
+                  Open Chat Interface
+                </Link>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={onOpenAuthModal}
+                >
+                  Account Details
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => onOpenAuthModal("login")}
+                >
+                  Log In
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => onOpenAuthModal("register")}
+                >
+                  Register
+                </button>
+              </>
+            )}
           </div>
-        ) : (
-          <div style={{ display: "flex", gap: "var(--space-4)", justifyContent: "center", marginBottom: "var(--space-8)", flexWrap: "wrap" }}>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => onOpenAuthModal("login")}
-              style={{ width: "auto" }}
-            >
-              Log In
-            </button>
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => onOpenAuthModal("register")}
-              style={{ width: "auto" }}
-            >
-              Register
-            </button>
-          </div>
-        )}
+        </div>
+      </section>
 
-        <div style={{ marginTop: "var(--space-8)", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "var(--space-4)", textAlign: "left" }}>
-          <div style={{ padding: "var(--space-4)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", background: "var(--color-bg)" }}>
-            <h3 style={{ marginTop: 0, marginBottom: "var(--space-2)" }}>Go Backend</h3>
-            <p style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-muted)", margin: 0 }}>
+      <section className="features-section" ref={featuresRef}>
+        <div className="features-grid">
+          <div className="feature-box">
+            <h3>Go Backend</h3>
+            <p>
               Hosted on Azure App Service at api.trygochat.tech.
             </p>
           </div>
-          <div style={{ padding: "var(--space-4)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", background: "var(--color-bg)" }}>
-            <h3 style={{ marginTop: 0, marginBottom: "var(--space-2)" }}>Azure Static Web Apps</h3>
-            <p style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-muted)", margin: 0 }}>
+          <div className="feature-box">
+            <h3>Azure Static Web Apps</h3>
+            <p>
               Single Page Application with navigation fallback routing.
             </p>
           </div>
-          <div style={{ padding: "var(--space-4)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", background: "var(--color-bg)" }}>
-            <h3 style={{ marginTop: 0, marginBottom: "var(--space-2)" }}>JWT Authentication</h3>
-            <p style={{ fontSize: "var(--font-size-sm)", color: "var(--color-text-muted)", margin: 0 }}>
+          <div className="feature-box">
+            <h3>JWT Authentication</h3>
+            <p>
               Token-based user session handling and email verification.
             </p>
           </div>
         </div>
-      </div>
-    </main>
+      </section>
+
+      <footer className="app-footer">
+        <p>&copy; 2026 GoChat&trade; - Powered by Go</p>
+        <p>Sergio Gomez</p>
+      </footer>
+    </div>
   );
 }

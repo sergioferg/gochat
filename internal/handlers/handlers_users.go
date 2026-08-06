@@ -221,6 +221,9 @@ func (api *API) HandlerGetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TEMPORARY DEBUG LOG
+	logrus.Infof("GetMe accessed with user ID: %v", userID)
+
 	dbUsers, err := api.DB.GetUserByID(r.Context(), userID)
 	if err != nil {
 		logrus.Warn("Database error in /me route:", err)
