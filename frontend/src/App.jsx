@@ -125,7 +125,8 @@ function App() {
                         <>
                             <button
                                 type="button"
-                                className={`nav-btn ${isAuthModalOpen && authMode === "login" ? "active" : ""}`}
+                                className="btn-primary"
+                                style={{ width: "auto", padding: "var(--space-2) var(--space-4)" }}
                                 onClick={() => handleOpenAuthModal("login")}
                             >
                                 Login

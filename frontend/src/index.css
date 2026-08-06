@@ -1,8 +1,8 @@
 :root {
   /* Colors */
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-light: rgba(37, 99, 235, 0.08);
+  --color-primary: #00bbb9;
+  --color-primary-hover: #00a2a0;
+  --color-primary-light: rgba(0, 187, 185, 0.08);
   --color-bg: #ffffff;
   --color-surface: #f8fafc;
   --color-surface-hover: #f1f5f9;
@@ -67,9 +67,9 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-primary: #3b82f6;
-    --color-primary-hover: #60a5fa;
-    --color-primary-light: rgba(59, 130, 246, 0.15);
+    --color-primary: #00bbb9;
+    --color-primary-hover: #00a2a0;
+    --color-primary-light: rgba(0, 187, 185, 0.15);
     --color-bg: #0f172a;
     --color-surface: #1e293b;
     --color-surface-hover: #334155;
@@ -154,11 +154,13 @@ code {
 .app-home-page {
   display: block;
   width: 100%;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .hero-section {
   position: relative;
-  height: 100vh;
+  height: calc(100vh - 65px); /* Subtracting navbar height approx */
   width: 100%;
   overflow: hidden;
   display: flex;
@@ -172,26 +174,28 @@ code {
 .hero-brush-line {
   position: absolute;
   opacity: 0;
-  z-index: 0;
-  animation: brushMove 15s infinite ease-in-out alternate, brushFadeIn 2s ease-out forwards;
+  z-index: -1;
+  border-radius: 50%;
+  filter: blur(30px);
+  animation: brushMove 8s infinite ease-in-out alternate, brushFadeIn 2s ease-out forwards;
 }
 
 .brush-1 {
-  top: -20%;
-  left: -20%;
-  width: 80%;
-  height: 80%;
-  background: radial-gradient(ellipse at center, var(--color-primary-light) 0%, transparent 70%);
-  transform: rotate(-15deg);
+  top: 50%;
+  left: 50%;
+  width: 120%;
+  height: 120%;
+  background: var(--color-primary-light);
+  transform: translate(-50%, -50%) rotate(-2deg);
 }
 
 .brush-2 {
-  bottom: -20%;
-  right: -10%;
-  width: 80%;
+  top: 60%;
+  left: 45%;
+  width: 100%;
   height: 80%;
-  background: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
-  transform: rotate(25deg);
+  background: rgba(59, 130, 246, 0.2);
+  transform: translate(-50%, -50%) rotate(3deg);
   animation-delay: 0.5s;
 }
 
@@ -202,6 +206,8 @@ code {
 }
 
 .hero-title {
+  position: relative;
+  display: inline-block;
   font-size: clamp(4rem, 8vw, 8rem);
   font-weight: 800;
   letter-spacing: -0.04em;

@@ -27,11 +27,12 @@ export default function Home({ currentUser, onOpenAuthModal }) {
   return (
     <div className="app-home-page">
       <section className="hero-section">
-        <div className="hero-brush-line brush-1"></div>
-        <div className="hero-brush-line brush-2"></div>
-        
         <div className="hero-content">
-          <h1 className="hero-title">Go<span>Chat</span></h1>
+          <h1 className="hero-title">
+            <div className="hero-brush-line brush-1"></div>
+            <div className="hero-brush-line brush-2"></div>
+            Go<span>Chat</span>
+          </h1>
           <p className="hero-description">
             A real-time messaging application connected to a Go server on Azure App Service and deployed via Azure Static Web Apps.
           </p>

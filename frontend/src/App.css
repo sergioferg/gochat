@@ -958,7 +958,7 @@
 }
 
 .btn-send-request.friends {
-  background-color: var(--color-surface-hover, #3b82f6);
+  background-color: var(--color-surface-hover, #00bbb9);
   color: #ffffff;
 }
 
